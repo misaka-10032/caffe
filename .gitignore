@@ -88,3 +88,9 @@ LOCK
 LOG*
 CURRENT
 MANIFEST-*
+
+# IDE Project
+*.idea
+
+# temp file
+*_temp
