@@ -1,0 +1,1 @@
+/Users/rocky/Research/caffe/examples/xiyuan/test/gray.jpg
