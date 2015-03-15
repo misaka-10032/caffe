@@ -1,2 +1,5 @@
 *.mdb
 log
+
+!*.caffemodel
+!*.solverstate
