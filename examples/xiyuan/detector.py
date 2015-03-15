@@ -1,7 +1,6 @@
 import caffe
 import cv2
 import numpy as np
-import time
 
 WINDOW_SIZES = [30, 40, 50, 60, 70, 80]
 STRIDE = 4
@@ -13,13 +12,6 @@ class Detector:
         self.net = caffe.Net(model_def_file, model_file, caffe.TEST)
         self.mean_caffe_img = np.load(mean_file).astype(np.float32, copy=False) if mean_file else 0
         self.need_equalize = need_equalize
-
-        self.t_resize = 0
-        self.t_cvtColor = 0
-        self.t_equalizeHist = 0
-        self.t_transpose = 0
-        self.t_forward = 0
-        self.t_nms = 0
 
     def detect(self, cv2_img, labels_of_interest=None, thresh=.9, windows=None, batch_size=BATCH_SIZE):
         '''
@@ -46,8 +38,8 @@ class Detector:
         for label_pred in self.detections:
             self.detections[label_pred], self.scores[label_pred] = \
                 np.array(self.detections[label_pred]), np.array(self.scores[label_pred])
-            t1=time.time(); self.detections[label_pred], self.scores[label_pred] = \
-                self.nms_detections(self.detections[label_pred], self.scores[label_pred]); t2=time.time(); self.t_nms+=t2-t1
+            self.detections[label_pred], self.scores[label_pred] = \
+                self.nms_detections(self.detections[label_pred], self.scores[label_pred])
 
         return self.detections, self.scores
 
@@ -63,7 +55,7 @@ class Detector:
         if batch_size <= 0:
             return
         patches = self._gen_patches(cv2_img, windows[idx_offset:idx_offset+batch_size])
-        t1=time.time(); probs_batch = self.net.forward_all(**{self.net.inputs[0]: patches})['prob'].squeeze((2, 3)); t2=time.time(); self.t_forward+=t2-t1
+        probs_batch = self.net.forward_all(**{self.net.inputs[0]: patches})['prob'].squeeze((2, 3))
         idx = idx_offset
         for probs in probs_batch:
             window = windows[idx]; idx += 1
@@ -128,11 +120,11 @@ class Detector:
 
     def preprocess(self, cv2_img):
         input_blob = self.net.blobs[self.net.inputs[0]]
-        t1=time.time(); img = cv2.resize(cv2_img, (input_blob.width, input_blob.height)); t2=time.time(); self.t_resize+=t2-t1
+        img = cv2.resize(cv2_img, (input_blob.width, input_blob.height))
         if self.need_equalize:
-            t1=time.time(); img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY); t2=time.time(); self.t_cvtColor+=t2-t1
-            t1=time.time(); img = cv2.equalizeHist(img); t2=time.time(); self.t_equalizeHist+=t2-t1
-            t1=time.time(); img = np.tile(img, (3, 1, 1)).transpose(0, 2, 1); t2=time.time(); self.t_transpose+=t2-t1
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = cv2.equalizeHist(img)
+            img = np.tile(img, (3, 1, 1)).transpose(0, 2, 1)
         else:
             img = img.transpose(2, 1, 0)
         img = img.astype(np.float32, copy=False)
