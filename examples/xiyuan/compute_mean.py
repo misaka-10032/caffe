@@ -8,7 +8,7 @@ import numpy as np
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LMDB = os.path.join(CURRENT_DIR, 'db_train')
 OUTPUT = os.path.join(CURRENT_DIR, 'mean.npy')
-C, W, H = 3, 50, 50
+C, W, H = 3, 30, 30
 
 env = lmdb.open(LMDB)
 img_mean = np.zeros((C, W, H))
