@@ -3,3 +3,5 @@ log
 
 !*.caffemodel
 !*.solverstate
+!mean.binaryproto
+!mean.npy
