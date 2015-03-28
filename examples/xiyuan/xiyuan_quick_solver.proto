@@ -1,0 +1,25 @@
+net: "examples/xiyuan/xiyuan_quick_train_test.proto"
+# given batch_size, test this many iterations
+test_iter: 100
+# calculate accuracy every this iterations
+test_interval: 1000
+
+momentum: 0.9
+weight_decay: 0.004
+
+#lr_policy: "step"
+#base_lr: 0.001
+#gamma: 0.1
+#stepsize: 2000
+
+lr_policy: "fixed"
+base_lr: 0.0001
+
+max_iter: 8000
+
+# display loss, lr every this many iterations
+display: 200
+snapshot: 2000
+snapshot_prefix: "examples/xiyuan/xiyuan_quick"
+
+solver_mode: GPU
