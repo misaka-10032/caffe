@@ -8,10 +8,10 @@ import numpy as np
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LMDB = os.path.join(CURRENT_DIR, 'db_train')
 OUTPUT = os.path.join(CURRENT_DIR, 'mean.npy')
-C, W, H = 3, 30, 30
+C, H, W = 3, 30, 30
 
 env = lmdb.open(LMDB)
-img_mean = np.zeros((C, W, H))
+img_mean = np.zeros((C, H, W))
 count = 0
 with env.begin() as ctx:
     cursor = ctx.cursor()
