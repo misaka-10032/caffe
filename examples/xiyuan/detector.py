@@ -2,18 +2,61 @@ import caffe
 import cv2
 import numpy as np
 
-WINDOW_SIZES = [30, 40, 50, 60, 70, 80]
+# WINDOW_SIZES = [30, 40, 50, 60, 70, 80]
+WINDOW_SIZES = [22, 24, 28, 32, 36, 40]
 STRIDE = 4
 BATCH_SIZE = 100
 
+SCALES = [.6, .8, 1., 1.2, 1.6, 2.]
+
 class Detector:
     def __init__(self, model_def_file, model_file,
-                 mean_file=None, need_equalize=True):
+                 mean_file=None, need_equalize=False, swap_channel=(2, 1, 0)):
         self.net = caffe.Net(model_def_file, model_file, caffe.TEST)
         self.mean_caffe_img = np.load(mean_file).astype(np.float32, copy=False) if mean_file else 0
         self.need_equalize = need_equalize
+        self.swap_channel = swap_channel
 
-    def detect(self, cv2_img, labels_of_interest=None, thresh=.9, windows=None, batch_size=BATCH_SIZE):
+    def detect_whole(self, cv2_img, labels_of_interest=[0]):
+        #h_origin, w_origin = cv2_img.shape[:2]  # original
+        #cv2_imgs = [cv2.resize(cv2_img, (int(w_origin*scale), int(h_origin*scale))) for scale in SCALES]
+
+        input_blob = self.net.blobs[self.net.inputs[0]]
+        w_win, h_win = input_blob.width, input_blob.height
+
+        # now each value is list, after running nms, it would be np.array
+        rects = {label: [] for label in labels_of_interest}
+        scores = {label: [] for label in labels_of_interest}
+
+        img = cv2_img
+        h, w = img.shape[:2]  # rescaled frame size
+        caffe_img = self.preprocess_whole(img)
+        input = caffe_img.reshape((1, ) + caffe_img.shape)
+        # probs = self.net.forward_all(**{self.net.inputs[0]: input})['prob'].squeeze(0)
+        probs = self.net.forward_all(data=input)['prob'][0]
+        predicts = np.argmax(probs.reshape(probs.shape[0]), axis=1).reshape(probs.shape[:-2])
+        ws, hs = probs.shape[:-2]  # how may steps in each axis
+        stride_w = int((w - w_win) / (ws - 1))
+        stride_h = int((h - h_win) / (hs - 1))
+        rects_scaled = {label: [] for label in labels_of_interest}
+        scores_scaled = {label: [] for label in labels_of_interest}
+        for w_start, w_idx in zip(xrange(0, w-w_win, stride_w), xrange(0, ws)):
+            for h_start, h_idx in zip(xrange(0, h-h_win, stride_h), xrange(0, hs)):
+                pred = predicts[w_idx, h_idx]  # by caffe it's w by h
+                if (pred in labels_of_interest):
+                    rects_scaled[pred].append((h_start, w_start, h, w))  # by cv2 it's h by w
+                    scores_scaled[pred].append(probs[pred][w_idx][h_idx])  # by caffe
+
+        for label in labels_of_interest:
+            rects[label].extend(rects_scaled[label])
+            scores[label].extend(scores_scaled[label])
+
+        for label in labels_of_interest:
+            rects[label], scores[label] = self.nms_detections(rects[label], scores[label])
+
+        return rects, scores
+
+    def detect_windows(self, cv2_img, labels_of_interest=None, thresh=.9, windows=None, batch_size=BATCH_SIZE):
         '''
         :param cv2_img: shape as (H, W, C)
         :param windows: [(h_start, w_start, h, w), ...]
@@ -118,19 +161,30 @@ class Detector:
 
         return dets[pick, :], scores[pick]
 
+    def preprocess_whole(self, cv2_img):
+        img = cv2_img.transpose(2, 1, 0)
+        img = img.astype(np.float32, copy=False)
+        img -= self.mean_caffe_img.mean()  # TODO: can I do in this way??
+        if self.swap_channel:
+            img = img[self.swap_channel, :, :]
+        return img
+
     def preprocess(self, cv2_img):
         input_blob = self.net.blobs[self.net.inputs[0]]
         img = cv2.resize(cv2_img, (input_blob.width, input_blob.height))
         if self.need_equalize:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             img = cv2.equalizeHist(img)
-            img = np.tile(img, (3, 1, 1)).transpose(0, 2, 1)
-        else:
-            img = img.transpose(2, 1, 0)
-        img = img.astype(np.float32, copy=False)
-        img -= self.mean_caffe_img  # always ok, because if you don't want to subtract, it's 0.
-        return img
+            img = np.tile(img, (3, 1, 1)).transpose(1, 2, 0)  # c, h, w -> h, w, c
 
+        img = img.transpose(2, 1, 0)  # h, w, c -> c, w, h
+        img = img.astype(np.float32, copy=False)
+
+        img -= self.mean_caffe_img
+
+        if self.swap_channel:
+            img = img[self.swap_channel, :, :]
+        return img
 
     def gen_windows(self, cv2_img, window_sizes=WINDOW_SIZES, stride=STRIDE):
         windows = []  # each element looks like: h_start, w_start, h, w
