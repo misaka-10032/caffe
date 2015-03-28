@@ -13,13 +13,13 @@ weight_decay: 0.004
 #stepsize: 2000
 
 lr_policy: "fixed"
-base_lr: 0.0001
+base_lr: 0.0000001
 
-max_iter: 8000
+max_iter: 15000
 
 # display loss, lr every this many iterations
 display: 200
-snapshot: 2000
-snapshot_prefix: "examples/xiyuan/xiyuan_quick"
+snapshot: 1000
+snapshot_prefix: "examples/xiyuan/xiyuan_quick_lr2"
 
 solver_mode: GPU

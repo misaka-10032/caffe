@@ -46,9 +46,9 @@ layer {
 		lr_mult: 2
 	}
 	convolution_param {
-		num_output: 16
-		pad: 2
-		kernel_size: 5
+		num_output: 128
+		pad: 1
+		kernel_size: 3
 		stride: 1
 		weight_filler {
 			type: "gaussian"
@@ -67,7 +67,7 @@ layer {
 	pooling_param {
 		pool: MAX
 		kernel_size:3
-		stride:2
+		stride:1
 	}
 }
 layer {
@@ -89,9 +89,9 @@ layer {
 		lr_mult: 2
 	}
 	convolution_param {
-		num_output: 16
-		pad: 2
-		kernel_size: 5
+		num_output: 256
+		pad: 1
+		kernel_size: 3
 		stride: 1
 		weight_filler {
 			type: "gaussian"
@@ -132,7 +132,7 @@ layer {
 		lr_mult: 2
 	}
 	convolution_param {
-		num_output: 32
+		num_output: 384
 		pad: 1
 		kernel_size: 3
 		stride: 1
@@ -158,7 +158,7 @@ layer {
 	top: "pool3"
 	pooling_param {
 		pool: AVE
-		kernel_size: 3
+		kernel_size: 2
 		stride: 1
 	}
 }
@@ -175,7 +175,7 @@ layer {
 		lr_mult: 2
 	}
 	inner_product_param {
-		num_output: 16
+		num_output: 128
 		weight_filler {
 			type: "gaussian"
 			std: 0.1
@@ -183,6 +183,15 @@ layer {
 		bias_filler {
 			type: "constant"
 		}
+	}
+}
+layer {
+	name: "drop1"
+	type: "Dropout"
+	bottom: "ip1"
+	top: "ip1"
+	dropout_param {
+		dropout_ratio: 0.5
 	}
 }
 
@@ -198,7 +207,7 @@ layer {
 		lr_mult: 2
 	}
 	inner_product_param {
-		num_output: 2
+		num_output: 23
 		weight_filler {
 			type: "gaussian"
 			std: 0.1
