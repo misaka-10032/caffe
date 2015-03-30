@@ -55,5 +55,6 @@ def display_imgs_in_tar(tar_file, size=5):
 
 
 def cv2_img_to_datum(cv2_img, label):
-    img = cv2_img.transpose(2, 1, 0)
+    img = cv2_img.transpose(2, 0, 1)  # h, w, c -> c, h, w
+    img = img[(2, 1, 0), :, :]  # b, g, r -> r, g, b
     return caffe.io.array_to_datum(img, label)

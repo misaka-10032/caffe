@@ -11,7 +11,7 @@ SCALES = [.6, .8, 1., 1.2, 1.6, 2.]
 
 class Detector:
     def __init__(self, model_def_file, model_file,
-                 mean_file=None, need_equalize=False, swap_channel=(2, 1, 0)):
+                 mean_file=None, need_equalize=False, swap_channel=(2, 1, 0)):  # b, g, r -> r, g, b
         self.net = caffe.Net(model_def_file, model_file, caffe.TEST)
         self.mean_caffe_img = np.load(mean_file).astype(np.float32, copy=False) if mean_file else 0
         self.need_equalize = need_equalize
@@ -63,7 +63,7 @@ class Detector:
         :return: {[(), (), ...], ...}, where r[i] is the detection for label i, r[i][j] is the jth window
         '''
         self.detections, self.scores = {}, {}
-        labels_of_interest = range(self.net.blobs[self.net.outputs[0]])\
+        labels_of_interest = range(self.net.blobs[self.net.outputs[0]].count)\
             if labels_of_interest is None else labels_of_interest
         for label in labels_of_interest:
             self.detections[label], self.scores[label] = [], []
@@ -133,7 +133,7 @@ class Detector:
             remaining after suppression.
         """
         if len(dets) <= 0:
-            return []
+            return np.array([]), np.array([])
 
         y1, x1, h, w = dets[:, 0], dets[:, 1], dets[:, 2], dets[:, 3]
         y2, x2 = y1 + h, x1 + w
@@ -177,13 +177,15 @@ class Detector:
             img = cv2.equalizeHist(img)
             img = np.tile(img, (3, 1, 1)).transpose(1, 2, 0)  # c, h, w -> h, w, c
 
-        img = img.transpose(2, 1, 0)  # h, w, c -> c, w, h
+        # img = img.transpose(2, 0, 1)  # h, w, c -> c, h, w
+        img = img.transpose(2, 1, 0)  # h, w, c -> c, h, w
         img = img.astype(np.float32, copy=False)
-
-        img -= self.mean_caffe_img
 
         if self.swap_channel:
             img = img[self.swap_channel, :, :]
+
+        img -= self.mean_caffe_img  # is zero if not specified
+
         return img
 
     def gen_windows(self, cv2_img, window_sizes=WINDOW_SIZES, stride=STRIDE):
