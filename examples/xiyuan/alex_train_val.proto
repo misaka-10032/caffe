@@ -10,7 +10,7 @@ layer {
   transform_param {
     mirror: false
     crop_size: 227
-    mean_file: "examples/xiyuan/mean.binaryproto"
+    mean_file: "examples/xiyuan/mean_uni-227x227.binaryproto"
   }
   data_param {
     source: "examples/xiyuan/db_train"
@@ -29,7 +29,7 @@ layer {
   transform_param {
     mirror: false
     crop_size: 227
-    mean_file: "examples/xiyuan/mean.binaryproto"
+    mean_file: "examples/xiyuan/mean_uni-227x227.binaryproto"
   }
   data_param {
     source: "examples/xiyuan/db_test"

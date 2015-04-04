@@ -1,4 +1,4 @@
-net: "models/bvlc_alexnet/train_val.prototxt"
+net: "examples/xiyuan/alex_train_val.proto"
 test_iter: 1000
 test_interval: 1000
 base_lr: 0.01
