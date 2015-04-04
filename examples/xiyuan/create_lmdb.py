@@ -69,7 +69,7 @@ def main():
             return self.txn
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            # self.txn.commit()
+            self.txn.commit()
             self.env.close()
             return False
 

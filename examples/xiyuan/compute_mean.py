@@ -8,10 +8,11 @@ import numpy as np
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LMDB = os.path.join(CURRENT_DIR, 'db_train')
 OUTPUT = os.path.join(CURRENT_DIR, 'mean.npy')
-C, H, W = 3, 30, 30
+C, H, W = 3, 227, 227
 
 env = lmdb.open(LMDB)
-img_mean = np.zeros((C, H, W))
+# img_mean = np.zeros((C, H, W))
+img_mean = None
 count = 0
 with env.begin() as ctx:
     cursor = ctx.cursor()
@@ -22,8 +23,15 @@ with env.begin() as ctx:
         d_str = cursor.value()
         datum.ParseFromString(d_str)
         img = caffe.io.datum_to_array(datum)
-        img_mean += img
+
+        C, H, W = img.shape
+        if img_mean is None:
+            img_mean = np.zeros((C, H, W))
+        else:
+            img_mean += img
+
         if not cursor.next():
             break
-    img_mean /= count
+
+img_mean /= count
 np.save(OUTPUT, img_mean)
