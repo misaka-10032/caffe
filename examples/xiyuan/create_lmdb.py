@@ -80,7 +80,7 @@ def main():
         tic_report = time.time()
         tic = time.time()
         print 'Creating db_train...'
-        with open_db(os.path.join(CURRENT_DIR, DB_TRAIN_NAME), 4000000000) as txn:
+        with open_db(os.path.join(CURRENT_DIR, DB_TRAIN_NAME), 40000000000) as txn:  # !!40G
             for iter in xrange(ITER_TRAIN):
                 if steps_to_report >= REPORT_INTERVAL:
                     steps_to_report -= REPORT_INTERVAL
@@ -110,7 +110,7 @@ def main():
         tic_report = time.time()
         tic = time.time()
         print 'Creating db_test...'
-        with open_db(os.path.join(CURRENT_DIR, DB_TEST_NAME), 1000000000) as txn:
+        with open_db(os.path.join(CURRENT_DIR, DB_TEST_NAME), 10000000000) as txn:  #!!10G
             while True:
                 should_terminate = False
 
