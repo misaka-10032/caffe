@@ -1,6 +1,7 @@
 import os
 import shutil
 import tarfile
+import math
 import cv2
 import caffe
 
@@ -58,3 +59,103 @@ def cv2_img_to_datum(cv2_img, label):
     img = cv2_img.transpose(2, 0, 1)  # h, w, c -> c, h, w
     img = img[(2, 1, 0), :, :]  # b, g, r -> r, g, b
     return caffe.io.array_to_datum(img, label)
+
+
+def dist(p1, p2):
+    return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+
+
+def oversample_img(img, box, angles, H, W):
+    '''
+    :param img:
+    :return: list of rotated & cropped (to square) & resized (to unisize) images
+    '''
+    # TODO: if overstep, then pad
+    if box[0] < 0 or\
+            box[1] < 0 or\
+            box[0] + box[2] > img.shape[0] or\
+            box[1] + box[3] > img.shape[1]:
+        return []
+
+    y, x, h, w = box
+    imgs = []
+    for angle in angles:
+        r = cv2.getRotationMatrix2D((x+w/2, y+h/2), angle, 1.0)
+        img_rot = cv2.warpAffine(img, r, (img.shape[1], img.shape[0]))
+        target = img_rot[y:y+h, x:x+w]
+        try:
+            imgs.extend(crop_resize_image(target, H, W))
+            imgs.extend(crop_resize_image(cv2.flip(target, 1), H, W))
+        except:
+            print '**oversample_img'
+            print box
+            print img.shape
+            print img_rot.shape
+            print target.shape
+            raise
+    return imgs
+
+
+def crop_resize_image(img, H, W):
+    h_whole, w_whole = img.shape[:2]
+    if abs(w_whole - h_whole) < 3:
+        return [cv2.resize(img, (W, H))]
+
+    imgs = []
+    if w_whole > h_whole:
+        h_start, h, w = 0, h_whole, h_whole
+        # left
+        w_start = 0
+
+        try:
+            imgs.append(cv2.resize(
+                img[h_start:h_start+h, w_start:w_start+w],
+                (W, H)))
+        except:
+            print '***crop_resize_image'
+            print img.shape
+            print h_start, w_start, h, w
+            raise
+
+        # middle
+        w_start = (w_whole - w) / 2
+        imgs.append(cv2.resize(
+            img[h_start:h_start+h, w_start:w_start+w],
+            (W, H)))
+        # right
+        w_start = w_whole - w
+        imgs.append(cv2.resize(
+            img[h_start:h_start+h, w_start:w_start+w],
+            (W, H)))
+        # whole
+        imgs.append(cv2.resize(img, (W, H)))
+    else:
+        w_start, h, w = 0, w_whole, w_whole
+        # top
+        h_start = 0
+        imgs.append(cv2.resize(
+            img[h_start:h_start+h, w_start:w_start+w],
+            (W, H)))
+        # middle
+        h_start = (h_whole - h) / 2
+        imgs.append(cv2.resize(
+            img[h_start:h_start+h, w_start:w_start+w],
+            (W, H)))
+        # bottom
+        h_start = h_whole - h
+        imgs.append(cv2.resize(
+            img[h_start:h_start+h, w_start:w_start+w],
+            (W, H)))
+        # whole
+        imgs.append(cv2.resize(img, (W, H)))
+
+    return imgs
+
+
+def put_imgs_to_tar(imgs, tar, name_prefix, TMP_DIR):
+    for img, idx in zip(imgs, xrange(len(imgs))):
+        tmp_file = os.path.join(TMP_DIR, 'tmp.jpg')
+        out_name = '%s_%s.jpg' % (name_prefix, idx)
+        cv2.imwrite(tmp_file, img)
+        tar.add(tmp_file, out_name)
+        os.remove(tmp_file)

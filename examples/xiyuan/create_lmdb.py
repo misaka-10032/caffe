@@ -13,9 +13,9 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(CURRENT_DIR, '../../data/xiyuan/arranged')
 INPUT_SUFFIX = 'tar.gz'
 
-RATIO_TRAIN = 0.8
-ITER_TRAIN = 20000
-REPORT_INTERVAL = 20000
+# RATIO_TRAIN = 0.8  # TODO: not used
+ITER_TRAIN = 20000  # TODO: adjust this BY HAND
+REPORT_INTERVAL = 20000  # this is # samples, not iterations
 
 DB_TRAIN_NAME = 'db_train'
 DB_TEST_NAME = 'db_test'
@@ -69,19 +69,26 @@ def main():
             return self.txn
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            self.txn.commit()
+            # self.txn.commit()
             self.env.close()
             return False
 
     with open_tars() as tars:
         # construct db_train
-        count = 0
+        count = 0  # it counts iterations, rather than samples
         steps_to_report = 0
         tic_report = time.time()
         tic = time.time()
         print 'Creating db_train...'
         with open_db(os.path.join(CURRENT_DIR, DB_TRAIN_NAME), 4000000000) as txn:
             for iter in xrange(ITER_TRAIN):
+                if steps_to_report >= REPORT_INTERVAL:
+                    steps_to_report -= REPORT_INTERVAL
+                    toc_report = time.time()
+                    print 'Processed %d; time spent: %ds' % (REPORT_INTERVAL * int(count / REPORT_INTERVAL),
+                                                             toc_report - tic_report)
+                    tic_report = time.time()
+
                 for tar, label in zip(tars, LABELS):
                     img = read_next_img_in_tar(tar)
                     count += 1
@@ -89,12 +96,7 @@ def main():
                     txn.put(DB_KEY_FORMAT % count, datum.SerializeToString())
 
                 steps_to_report += NUM_LABELS
-                if steps_to_report >= REPORT_INTERVAL:
-                    steps_to_report -= REPORT_INTERVAL
-                    toc_report = time.time()
-                    print 'Processed %d; time spent: %ds' % (REPORT_INTERVAL * int(count / REPORT_INTERVAL),
-                                                             toc_report - tic_report)
-                    tic_report = time.time()
+
 
         print '*' * 50
         toc = time.time()
