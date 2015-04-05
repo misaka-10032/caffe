@@ -7,7 +7,7 @@ import numpy as np
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-W, H = 227, 227
+W, H = 30, 30
 MEAN_NPY = os.path.join(CURRENT_DIR, 'mean.npy')
 MEAN_BIN = os.path.join(CURRENT_DIR, 'mean.binaryproto')
 
