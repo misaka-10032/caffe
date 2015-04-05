@@ -10,7 +10,7 @@ CURRENT_DIR = CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 model_file_single = str(os.path.join(os.path.dirname(CURRENT_DIR), 'xiyuan_quick_single_deploy.proto'))
 model_file_multi = str(os.path.join(os.path.dirname(CURRENT_DIR), 'xiyuan_quick_multi_deploy.proto'))
-pretrained_file_single = str(os.path.join(os.path.dirname(CURRENT_DIR), 'xiyuan_quick_lr1_iter_19000.caffemodel'))
+pretrained_file_single = str(os.path.join(os.path.dirname(CURRENT_DIR), 'xiyuan_quick_iter_50000.caffemodel'))
 # pretrained_file_multi = str(os.path.join(os.path.dirname(CURRENT_DIR), 'xiyuan_quick_lr1_iter_7000_multi.caffemodel'))
 mean_file = str(os.path.join(os.path.dirname(CURRENT_DIR), 'mean_uni-30x30.npy'))
 frame_file = str(os.path.join(CURRENT_DIR, 'frame_half.jpg'))
