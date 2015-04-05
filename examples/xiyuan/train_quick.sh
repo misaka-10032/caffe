@@ -4,4 +4,4 @@ set -e
 TOOLS=./build/tools
 
 $TOOLS/caffe train \
-  --solver=examples/xiyuan/alex_solver.proto
+  --solver=examples/xiyuan/xiyuan_quick_solver.proto
