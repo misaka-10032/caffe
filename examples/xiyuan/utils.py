@@ -68,16 +68,29 @@ def dist(p1, p2):
 def oversample_img(img, box, angles, H, W):
     '''
     :param img:
-    :return: list of rotated & cropped (to square) & resized (to unisize) images
+    :param box: (y, x, h, w)
+    :param angles: list of angles
+    :param H: uni-height of the cropped image
+    :param W: uni-width of the cropped image
+    :return: list of rotated & flipped & cropped (to square) & resized (to uni-size) images
     '''
-    # TODO: if overstep, then pad
-    if box[0] < 0 or\
-            box[1] < 0 or\
-            box[0] + box[2] > img.shape[0] or\
-            box[1] + box[3] > img.shape[1]:
+    y, x, h, w = box
+    if x < 0 or y < 0 or\
+            x+w > img.shape[1] or\
+            y+h > img.shape[0]:
+        img = cv2.copyMakeBorder(img,
+                                 -min(0, y),
+                                 max(0, y+h-img.shape[0]),
+                                 -min(0, x),
+                                 max(0, x+w-img.shape[1]),
+                                 cv2.BORDER_CONSTANT)
+        x = max(0, x)
+        y = max(0, y)
+    box = (y, x, h, w)
+
+    if h * w <= 0:
         return []
 
-    y, x, h, w = box
     imgs = []
     for angle in angles:
         r = cv2.getRotationMatrix2D((x+w/2, y+h/2), angle, 1.0)

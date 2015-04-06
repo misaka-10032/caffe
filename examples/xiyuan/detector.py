@@ -2,9 +2,9 @@ import caffe
 import cv2
 import numpy as np
 
-WINDOW_SIZES = [100, 110, 120, 130]
-# WINDOW_SIZES = [22, 24, 28, 32, 36, 40]
-STRIDE = 4
+# WINDOW_SIZES = [100, 110, 120, 130]
+WINDOW_SIZES = [22, 24, 28, 32, 36, 40]
+STRIDE = 2
 BATCH_SIZE = 100
 
 SCALES = [.6, .8, 1., 1.2, 1.6, 2.]

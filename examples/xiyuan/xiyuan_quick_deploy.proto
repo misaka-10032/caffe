@@ -111,7 +111,7 @@ layer {
 layer {
 	name: "conv4"
 	type: "Convolution"
-	bottom: "pool3"
+	bottom: "conv3"
 	top: "conv4"
 	param {
 		lr_mult: 1
@@ -138,7 +138,7 @@ layer {
 layer {
 	name: "ip1"
 	type: "InnerProduct"
-	bottom: "pool3"
+	bottom: "conv4"
 	top: "ip1"
 	param {
 		lr_mult: 1
