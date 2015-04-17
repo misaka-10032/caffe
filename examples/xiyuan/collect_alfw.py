@@ -23,9 +23,11 @@ tar_out_suffix = 'tar.gz'
 tar_out_file = '%s.%s' % (tar_out_name, tar_out_suffix)
 
 W, H = 30, 30
-angles = xrange(-20, 30, 20)
+ANGLE_MIN = -20  # inclusive
+ANGLE_MAX = 30  # exclusive
+ANGLE_DELTA = 20
 
-MAX_COUNT = 25000
+# MAX_COUNT = 25000
 REPORT_INTERVAL = 5000
 
 SELECT_FACE_ID_FROM_FILE_ID = "select face_id from Faces where file_id='%s'"
@@ -33,6 +35,7 @@ SELECT_FACE_RECT_FROM_ID = "select x, y, w, h from FaceRect where face_id='%s'"
 
 YAW_MIN, YAW_MAX = -pi/4, pi/4
 SELECT_YAW_GIVEN_ID = "select yaw from FacePose where face_id='%s'"
+SELECT_ROLL_GIVEN_ID = "select roll from FacePose where face_id='%s'"
 
 count = 0
 
@@ -49,8 +52,8 @@ def main():
 
         with tarfile.open(os.path.join(input_dir, _tar)) as tar_in:
             while True:
-                if count > MAX_COUNT:
-                    break
+                # if count > MAX_COUNT:
+                #     break
                 if reporter > REPORT_INTERVAL:
                     toc = time.time()
                     print 'tar_idx, count, time = %d, %d, %d' % (tar_idx, count, toc-tic)
@@ -101,6 +104,14 @@ def main():
                     continue
                 x, y, w, h = rect
                 box = (y, x, h, w)
+
+                cursor.execute(SELECT_ROLL_GIVEN_ID % face_id)
+                roll = cursor.fetchone()
+                if not roll:
+                    continue
+                roll = roll[0]
+                roll = int(roll / pi * 180)
+                angles = xrange(ANGLE_MIN-roll, ANGLE_MAX-roll, ANGLE_DELTA)
 
                 # patch faces with rotations
                 img_out_file = os.path.join(tmp_dir, 'tmp.jpg')
