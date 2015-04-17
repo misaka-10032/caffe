@@ -5,6 +5,10 @@ import os
 import lmdb
 import numpy as np
 
+'''
+mean is of shape (c, h, w)
+'''
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LMDB = os.path.join(CURRENT_DIR, 'db_train')
 OUTPUT = os.path.join(CURRENT_DIR, 'mean.npy')

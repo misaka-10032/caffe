@@ -9,6 +9,12 @@ import functools
 
 tmp_dir = os.path.join('/tmp', __name__)
 
+'''
+Convention: inner representation uses (h, w);
+    user interfaces represents as (w, h).
+    Take that in func signature design and order them as (h, w), because that's inner call.
+'''
+
 
 def need_tmp_dir(tmp_dir):
     def decorator(func):
