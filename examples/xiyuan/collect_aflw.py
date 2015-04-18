@@ -153,6 +153,6 @@ if __name__ == '__main__':
     conn.close()
     tar_out.close()
 
-    renamed = '%s_%s.%s' % (tar_out_file, count, tar_out_suffix)
+    renamed = '%s_%s.%s' % (tar_out_name, count, tar_out_suffix)
     os.rename(os.path.join(output_dir, tar_out_file),
               os.path.join(output_dir, renamed))

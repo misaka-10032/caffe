@@ -34,7 +34,7 @@ OUTPUT_DIR = os.path.join(CURRENT_DIR, '../../data/xiyuan/arranged')
 OUTPUT_SUFFIX = 'tar.gz'
 # OUTPUT_TAR = os.path.join(OUTPUT_DIR, '%s-%s.%s' % (LABEL, TARGET, OUTPUT_SUFFIX))
 
-W, H = 227, 227
+W, H = 30, 30
 angles = xrange(-20, 30, 10)
 
 MAX_COUNT = 25000
