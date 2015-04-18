@@ -60,6 +60,7 @@ def main():
                     tic = time.time()
                     reporter -= REPORT_INTERVAL
 
+                ### sanity check of filename
                 ti = tar_in.next()
                 if not ti:
                     break
@@ -75,43 +76,50 @@ def main():
                     continue
                 if file_id is None:
                     continue
+                ###
 
                 # extract to /tmp and read image
                 tar_in.extract(ti, tmp_dir)
                 img_file = os.path.join(tmp_dir, res_prefix, str(tar_idx), file_id)
                 img = cv2.imread(img_file)
 
-                # get face_id
-                cursor.execute(SELECT_FACE_ID_FROM_FILE_ID % file_id)
-                face_id = cursor.fetchone()
-                if face_id is None:
-                    continue
-                face_id = face_id[0]  # it's a tuple, so get the first element
+                ### sanity check of the extracted image
+                try:
+                    # get face_id
+                    cursor.execute(SELECT_FACE_ID_FROM_FILE_ID % file_id)
+                    face_id = cursor.fetchone()
+                    if face_id is None:
+                        continue
+                    face_id = face_id[0]  # it's a tuple, so get the first element
 
-                # filter face with yaw
-                cursor.execute(SELECT_YAW_GIVEN_ID % face_id)
-                yaw = cursor.fetchone()
-                if yaw is None:
-                    continue
-                yaw = yaw[0]
-                if yaw < YAW_MIN or yaw > YAW_MAX:
-                    continue
+                    # filter face with yaw
+                    cursor.execute(SELECT_YAW_GIVEN_ID % face_id)
+                    yaw = cursor.fetchone()
+                    if yaw is None:
+                        continue
+                    yaw = yaw[0]
+                    if yaw < YAW_MIN or yaw > YAW_MAX:
+                        continue
 
-                # get face rect
-                cursor.execute(SELECT_FACE_RECT_FROM_ID % face_id)
-                rect = cursor.fetchone()
-                if rect is None:
-                    continue
-                x, y, w, h = rect
-                box = (y, x, h, w)
+                    # get face rect
+                    cursor.execute(SELECT_FACE_RECT_FROM_ID % face_id)
+                    rect = cursor.fetchone()
+                    if rect is None:
+                        continue
+                    x, y, w, h = rect
+                    box = (y, x, h, w)
 
-                cursor.execute(SELECT_ROLL_GIVEN_ID % face_id)
-                roll = cursor.fetchone()
-                if not roll:
-                    continue
-                roll = roll[0]
-                roll = int(roll / pi * 180)
-                angles = xrange(ANGLE_MIN-roll, ANGLE_MAX-roll, ANGLE_DELTA)
+                    cursor.execute(SELECT_ROLL_GIVEN_ID % face_id)
+                    roll = cursor.fetchone()
+                    if not roll:
+                        continue
+                    roll = roll[0]
+                    roll = int(roll / pi * 180)
+                    angles = xrange(ANGLE_MIN-roll, ANGLE_MAX-roll, ANGLE_DELTA)
+
+                finally:
+                    os.remove(img_file)
+                ###
 
                 # patch faces with rotations
                 img_out_file = os.path.join(tmp_dir, 'tmp.jpg')
@@ -126,8 +134,8 @@ def main():
                 reporter += num_imgs
 
                 # clean up
-                os.remove(img_file)
                 os.remove(img_out_file)
+
 
 
 def show():
