@@ -39,7 +39,7 @@ YAW_MIN, YAW_MAX = -pi/4, pi/4
 SELECT_YAW_GIVEN_ID = "select yaw from FacePose where face_id='%s'"
 SELECT_ROLL_GIVEN_ID = "select roll from FacePose where face_id='%s'"
 # heads up or down depends on pitch
-PITCH_LOW, PITCH_HIGH = -pi/9, 0
+PITCH_LOW, PITCH_HIGH = -pi/6, pi/18
 SELECT_PITCH_GIVEN_ID = "select pitch from FacePose where face_id=%s"
 
 count_up = 0

@@ -14,7 +14,7 @@ INPUT_DIR = os.path.join(CURRENT_DIR, '../../data/xiyuan/arranged')
 INPUT_SUFFIX = 'tar.gz'
 
 RATIO_TRAIN = 0.8  # TODO: not used
-ITER_TOTAL = 6016  # TODO: adjust this BY HAND
+ITER_TOTAL = 1492  # TODO: adjust this BY HAND
 ITER_TRAIN = int(ITER_TOTAL * RATIO_TRAIN)
 REPORT_INTERVAL = 500  # this is # samples, not iterations
 
