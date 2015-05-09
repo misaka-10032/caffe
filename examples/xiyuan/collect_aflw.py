@@ -21,8 +21,8 @@ CASCADE = os.path.join(CURRENT_DIR, '../../data/cascade/haarcascade_frontalface_
 tar_in_files = ['aflw-images-3.tar.gz', 'aflw-images-2.tar.gz', 'aflw-images-0.tar.gz']
 tar_out_name = 'face_aflw'
 tar_out_suffix = 'tar.gz'
-TAR_OUT_UP = '1-%s-up.%s' % (tar_out_name, tar_out_suffix)
-TAR_OUT_DOWN = '0-%s-down.%s' % (tar_out_name, tar_out_suffix)
+TAR_OUT_UP = '0-%s-up.%s' % (tar_out_name, tar_out_suffix)
+TAR_OUT_DOWN = '1-%s-down.%s' % (tar_out_name, tar_out_suffix)
 
 W, H = 30, 30
 ANGLE_MIN = -20  # inclusive
