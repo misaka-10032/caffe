@@ -21,8 +21,8 @@ CASCADE = os.path.join(CURRENT_DIR, '../../data/cascade/haarcascade_frontalface_
 tar_in_files = ['aflw-images-3.tar.gz', 'aflw-images-2.tar.gz', 'aflw-images-0.tar.gz']
 tar_out_name = 'face_aflw'
 tar_out_suffix = 'tar.gz'
-TAR_OUT_UP = '0-%s-up.%s' % (tar_out_name, tar_out_suffix)
-TAR_OUT_DOWN = '1-%s-down.%s' % (tar_out_name, tar_out_suffix)
+TAR_OUT_UP = '1-%s-up.%s' % (tar_out_name, tar_out_suffix)
+TAR_OUT_DOWN = '0-%s-down.%s' % (tar_out_name, tar_out_suffix)
 
 W, H = 30, 30
 ANGLE_MIN = -20  # inclusive
@@ -39,7 +39,7 @@ YAW_MIN, YAW_MAX = -pi/4, pi/4
 SELECT_YAW_GIVEN_ID = "select yaw from FacePose where face_id='%s'"
 SELECT_ROLL_GIVEN_ID = "select roll from FacePose where face_id='%s'"
 # heads up or down depends on pitch
-PITCH_LOW, PITCH_HIGH = -pi/18, pi/18
+PITCH_LOW, PITCH_HIGH = -pi/9, 0
 SELECT_PITCH_GIVEN_ID = "select pitch from FacePose where face_id=%s"
 
 count_up = 0
@@ -50,7 +50,7 @@ def main():
     cascade = cv2.CascadeClassifier(CASCADE)
     tic = time.time()
     global count_up
-    global ocount_down
+    global count_down
     count_up = 0
     count_down = 0
     reporter = 0
@@ -197,9 +197,9 @@ if __name__ == '__main__':
     tar_out_up.close()
     tar_out_down.close()
 
-    renamed = '%s-up_%s.%s' % (tar_out_name, count_up, tar_out_suffix)
+    renamed = '0-%s-up_%s.%s' % (tar_out_name, count_up, tar_out_suffix)
     os.rename(os.path.join(output_dir, TAR_OUT_UP),
               os.path.join(output_dir, renamed))
-    renamed = '%s-down_%s.%s' % (tar_out_name, count_down, tar_out_suffix)
+    renamed = '1-%s-down_%s.%s' % (tar_out_name, count_down, tar_out_suffix)
     os.rename(os.path.join(output_dir, TAR_OUT_DOWN),
               os.path.join(output_dir, renamed))
