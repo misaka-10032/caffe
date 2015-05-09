@@ -13,9 +13,10 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(CURRENT_DIR, '../../data/xiyuan/arranged')
 INPUT_SUFFIX = 'tar.gz'
 
-# RATIO_TRAIN = 0.8  # TODO: not used
-ITER_TRAIN = 20000  # TODO: adjust this BY HAND
-REPORT_INTERVAL = 20000  # this is # samples, not iterations
+RATIO_TRAIN = 0.8  # TODO: not used
+ITER_TOTAL = 1954  # TODO: adjust this BY HAND
+ITER_TRAIN = int(ITER_TOTAL * RATIO_TRAIN)
+REPORT_INTERVAL = 500  # this is # samples, not iterations
 
 DB_TRAIN_NAME = 'db_train'
 DB_TEST_NAME = 'db_test'

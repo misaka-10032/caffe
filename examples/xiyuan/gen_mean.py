@@ -20,7 +20,7 @@ PREFIX_OUT = 'mean_uni'
 def main(args):
     size = args.size.split('x')
     assert len(size) == 2
-    w, h = size[0], size[1]
+    w, h = int(size[0]), int(size[1])
 
     in_npy = args.input
     prefix = args.prefix or PREFIX_OUT
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-s', '--size', type=str, default='%dx%d' % (W, H),
                         help='Size of generated mean image. Format: WxH. Default: %dx%d' % (W, H))
-    parser.add_argument('-i', '--input', type=str, default=str(MEAN_BIN),
+    parser.add_argument('-i', '--input', type=str, default=str(MEAN_NPY),
                         help='Input to be generated from.')
     parser.add_argument('-p', '--prefix', type=str, default=None,
                         help='Prefix of the generated mean image')

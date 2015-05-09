@@ -16,13 +16,13 @@ OUTPUT = os.path.join(CURRENT_DIR, 'mean.npy')
 env = lmdb.open(LMDB)
 # img_mean = np.zeros((C, H, W))
 img_mean = None
-count = 0
+count_up = 0
 with env.begin() as ctx:
     cursor = ctx.cursor()
     cursor.first()
     datum = caffe.io.caffe_pb2.Datum()
     while True:
-        count += 1
+        count_up += 1
         d_str = cursor.value()
         datum.ParseFromString(d_str)
         img = caffe.io.datum_to_array(datum)
@@ -35,5 +35,5 @@ with env.begin() as ctx:
         if not cursor.next():
             break
 
-img_mean /= count
+img_mean /= count_up
 np.save(OUTPUT, img_mean)
