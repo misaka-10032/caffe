@@ -13,6 +13,9 @@ include(cmake/Targets.cmake)
 include(cmake/Misc.cmake)
 include(cmake/Summary.cmake)
 include(cmake/ConfigGen.cmake)
+if (EXISTS ${PROJECT_SOURCE_DIR}/cmake/Local.cmake)
+  include(cmake/Local.cmake)
+endif()
 
 # ---[ Options
 caffe_option(CPU_ONLY  "Build Caffe without CUDA support" OFF) # TODO: rename to USE_CUDA
