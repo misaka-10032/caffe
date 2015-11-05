@@ -266,6 +266,18 @@ class Blob {
 
   bool ShapeEquals(const BlobProto& other);
 
+
+  int GetBlockOffset(int axis);
+  /*
+   * Split at first dimension
+   */
+  static vector<shared_ptr<Blob<Dtype> > >& Split1(Blob& blob, int piece);
+  /*
+   * Merge at first dimension
+   */
+  // TODO
+//  static Blob& Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs);
+
  protected:
   shared_ptr<SyncedMemory> data_;
   shared_ptr<SyncedMemory> diff_;

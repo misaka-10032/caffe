@@ -533,6 +533,88 @@ void Blob<float>::ToProto(BlobProto* proto, bool write_diff) const {
   }
 }
 
+template <typename Dtype>
+int Blob<Dtype>::GetBlockOffset(int axis) {
+  int offset = 1;
+  int size = shape_.size();
+  for (int i = axis; i < size; i++) {
+    offset *= shape_[i];
+  }
+  return offset;
+}
+
+template <typename Dtype>
+vector<shared_ptr<Blob<Dtype> > >& Blob<Dtype>::Split1(Blob<Dtype>& blob, int piece) {
+  // TODO: assert piece > 1
+  // TODO: assert blob have valid shape
+
+  const int axis = 1;
+  vector<int> shape = blob.shape();
+  vector<int> dividedShape = shape;
+  dividedShape[axis] /= piece;
+  vector<int> lastShape = dividedShape;
+  lastShape[axis] += shape[axis] % piece;
+
+  vector<shared_ptr<Blob<Dtype> > >& blobs =
+      *(new vector<shared_ptr<Blob<Dtype> > >(piece));
+  for (int i = 0; i < piece - 1; i++) {
+    blobs[i].reset(new Blob<Dtype>(dividedShape));
+  }
+  blobs[piece-1].reset(new Blob<Dtype>(lastShape));
+
+  int dim0 = shape[0];
+  int dividedOffset = blobs[0]->GetBlockOffset(axis);
+  int lastOffset = blobs[piece - 1]->GetBlockOffset(axis);
+  int offset = blob.GetBlockOffset(axis);
+  const void *src;
+  void *dst;
+  for (int j = 0; j < dim0; j++) {
+    for (int i = 0; i < piece - 1; i++) {
+      dst = blobs[i]->mutable_cpu_data() + j * dividedOffset;
+      src = blob.cpu_data() + j * offset + i * dividedOffset;
+      memcpy(dst, src, sizeof(Dtype) * dividedOffset);
+      dst = blobs[i]->mutable_cpu_diff() + j * dividedOffset;
+      src = blob.cpu_diff() + j * offset + i * dividedOffset;
+      memcpy(dst, src, sizeof(Dtype) * dividedOffset);
+      // TODO: GPU data
+    }
+    dst = blobs[piece - 1]->mutable_cpu_data() + j * lastOffset;
+    src = blob.cpu_data() + (j + 1) * offset - lastOffset;
+    memcpy(dst, src, sizeof(Dtype) * lastOffset);
+    dst = blobs[piece - 1]->mutable_cpu_diff() + j * lastOffset;
+    src = blob.cpu_diff() + (j + 1) * offset - lastOffset;
+    memcpy(dst, src, sizeof(Dtype) * lastOffset);
+    // TODO: GPU data
+  }
+
+  return blobs;
+}
+
+//template <typename Dtype>
+//Blob<Dtype>& Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs) {
+//  // TODO: assert piece > 1
+//  // TODO: assert blob have valid shape
+//
+//  const int axis = 1;
+//  int piece = blobs.size();
+//  vector<int> dividedShape = blobs[0]->shape();
+//  vector<int> shape = dividedShape;
+//  shape[1] *= piece - 1;
+//  shape[1] += blobs[piece-1]->shape()[1];
+//
+//  Blob blob = *(new Blob<Dtype>(shape));
+//  int dim0 = shape[0];
+//  int dividedOffset = blobs[0]->GetBlockOffset(axis);
+//  int offset = blob.GetBlockOffset(axis);
+//
+//  for (int j = 0; j < dim0; j++) {
+//    for (int i = 0; i < piece - 1; i++) {
+//      // TODO
+//    }
+//  }
+//  return blob;
+//}
+
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;
 template class Blob<unsigned int>;

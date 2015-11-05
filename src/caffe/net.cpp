@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <caffe/mpi/scheduler.h>
 
 #include "hdf5.h"
 
@@ -40,6 +41,11 @@ template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
   CHECK(Caffe::root_solver() || root_net_)
       << "root_net_ needs to be set for all non-root solvers";
+
+  // Get the singleton scheduler
+  Scheduler<Dtype> *scheduler = Scheduler<Dtype>::Get();
+  scheduler->setNet(this);
+
   // Set phase from the state.
   phase_ = in_param.state().phase();
   // Filter layers based on their include/exclude rules and
@@ -280,6 +286,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   }
   ShareWeights();
   debug_info_ = param.debug_info();
+
   LOG_IF(INFO, Caffe::root_solver()) << "Network initialization done.";
 }
 
@@ -563,21 +570,7 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
 
 template <typename Dtype>
 Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
-  CHECK_GE(start, 0);
-  CHECK_LT(end, layers_.size());
-  Dtype loss = 0;
-  if (debug_info_) {
-    for (int i = 0; i < net_input_blobs_.size(); ++i) {
-      InputDebugInfo(i);
-    }
-  }
-  for (int i = start; i <= end; ++i) {
-    // LOG(ERROR) << "Forwarding " << layer_names_[i];
-    Dtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
-    loss += layer_loss;
-    if (debug_info_) { ForwardDebugInfo(i); }
-  }
-  return loss;
+  return Scheduler<Dtype>::Get()->ForwardFromTo(start, end);
 }
 
 template <typename Dtype>
@@ -633,15 +626,7 @@ string Net<Dtype>::Forward(const string& input_blob_protos, Dtype* loss) {
 
 template <typename Dtype>
 void Net<Dtype>::BackwardFromTo(int start, int end) {
-  CHECK_GE(end, 0);
-  CHECK_LT(start, layers_.size());
-  for (int i = start; i >= end; --i) {
-    if (layer_need_backward_[i]) {
-      layers_[i]->Backward(
-          top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
-      if (debug_info_) { BackwardDebugInfo(i); }
-    }
-  }
+  Scheduler<Dtype>::Get()->BackwardFromTo(start, end);
 }
 
 template <typename Dtype>
