@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     cout << endl;
   }
   cout << endl << endl;
-
+	
   vector<shared_ptr<Blob<float> > > blobs = Blob<float>::Split1(blob, 2);
 
   for (int i = 0; i < 2; i++) {
