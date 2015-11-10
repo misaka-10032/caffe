@@ -12,7 +12,7 @@
 namespace caffe {
 
   template<typename Dtype>
-  Scheduler<Dtype> *Scheduler<Dtype>::instance_ = nullptr;
+  Scheduler<Dtype> *Scheduler<Dtype>::instance_ = NULL;
 
 
   template <typename Dtype>
