@@ -23,18 +23,19 @@ int main(int argc, char** argv) {
   shape[0] = 2;
   shape[1] = 5;
 
-  Blob<float> blob(shape);
+  shared_ptr<Blob<float> > blob(new Blob<float>(shape));
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 5; j++) {
       int idx = i * 5 + j;
-      *(blob.mutable_cpu_data() + idx) = (float) idx;
-      cout << *(blob.cpu_data() + idx) << " ";
+      *(blob->mutable_cpu_data() + idx) = (float) idx;
+      cout << *(blob->cpu_data() + idx) << " ";
     }
     cout << endl;
   }
   cout << endl << endl;
-	
-  vector<shared_ptr<Blob<float> > > blobs = Blob<float>::Split1(blob, 2);
+
+  vector<shared_ptr<Blob<float> > > blobs;
+  Blob<float>::Split1(blob, 2, blobs);
 
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {

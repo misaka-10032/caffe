@@ -14,7 +14,7 @@ namespace caffe {
   void MpiDistrLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                                         const vector<Blob<Dtype>*>& top) {
     // make sure it's in parallel
-    CHECK_GE(parallelism_, 1);
+    CHECK_GE(this->parallelism_, 1);
     // bottom and top are set up previously
     // make sure bottom and top point to the same blob
     CHECK_GE(bottom[0], top[0]);

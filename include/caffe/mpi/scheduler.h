@@ -45,7 +45,7 @@ namespace caffe {
     Dtype ForwardFromTo(int start, int end);
     void BackwardFromTo(int start, int end);
 
-    vector<int>& Scheduler<Dtype>::ShapeForSlave(const vector<int>& completeShape);
+//    vector<int>& Scheduler<Dtype>::ShapeForSlave(const vector<int>& complete_shape);
 
   protected:
     Scheduler<Dtype>() { }

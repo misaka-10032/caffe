@@ -271,11 +271,13 @@ class Blob {
   /*
    * Split at first dimension
    */
-  static vector<shared_ptr<Blob<Dtype> > >& Split1(Blob& blob, int piece);
+  static void Split1(shared_ptr<Blob>& blob, int piece,
+                     vector<shared_ptr<Blob<Dtype> > >& blobs);
   /*
    * Merge at first dimension
    */
-  static Blob<Dtype>& Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs);
+  static void Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
+                     shared_ptr<Blob<Dtype> >& blob);
 
  protected:
   shared_ptr<SyncedMemory> data_;
