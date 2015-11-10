@@ -276,7 +276,7 @@ class Blob {
    * Merge at first dimension
    */
   // TODO
-//  static Blob& Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs);
+  static Blob<Dtype>& Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs);
 
  protected:
   shared_ptr<SyncedMemory> data_;

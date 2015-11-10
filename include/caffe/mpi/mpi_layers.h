@@ -58,11 +58,11 @@ namespace caffe {
     Blob<Dtype> bias_multiplier_;
   };
 
-  /* MpiSplitLayer */
+  /* MpiDistrLayer */
   template<typename Dtype>
-  class MpiSplitLayer : public MpiLayer<Dtype> {
+  class MpiDistrLayer : public MpiLayer<Dtype> {
   public:
-    MpiSplitLayer(const LayerParameter &param)
+    MpiDistrLayer(const LayerParameter &param)
         : MpiLayer<Dtype>(param) { }
 
     virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,

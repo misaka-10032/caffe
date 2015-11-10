@@ -160,6 +160,12 @@ layer {
   }
 }
 layer {
+  name: "mpi_distr"
+  type: "MpiDistr"
+  bottom: "pool3"
+  top: "pool3"
+}
+layer {
   name: "ip1"
   type: "MpiFc"
   bottom: "pool3"

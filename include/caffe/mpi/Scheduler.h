@@ -45,6 +45,8 @@ namespace caffe {
     Dtype ForwardFromTo(int start, int end);
     void BackwardFromTo(int start, int end);
 
+    vector<int>& Scheduler<Dtype>::ShapeForSlave(const vector<int>& completeShape);
+
   protected:
     Scheduler<Dtype>() { }
 
@@ -52,6 +54,7 @@ namespace caffe {
     mpi::communicator world;
 
   private:
+    static const int TAG_BLOB_PIECE = 1;
     static Scheduler<Dtype> *instance_;
     Net<Dtype> *net_;
   };

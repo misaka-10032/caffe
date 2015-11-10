@@ -5,9 +5,16 @@
  * @bug
  */
 
+#include <boost/mpi.hpp>
+#include <boost/mpi/collectives.hpp>
+
 #include "caffe/common.hpp"
 #include "caffe/net.hpp"
 #include "caffe/mpi/scheduler.h"
+#include "caffe/mpi/mpi_layers.h"
+
+namespace mpi = boost::mpi;
+
 
 namespace caffe {
 
@@ -116,11 +123,79 @@ namespace caffe {
     }
     for (int i = start; i <= end; ++i) {
       // LOG(ERROR) << "Forwarding " << layer_names_[i];
-      Dtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
-      loss += layer_loss;
+      shared_ptr<Layer<Dtype>> layer = layers_[i];
+      MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
+      MpiDistrLayer<Dtype>* __as_distr__ = dynamic_cast<MpiDistrLayer<Dtype>*>(layer.get());
+      int size = world.size();
+      int rank = world.rank();
+      if (rank == 0) {                  /* is master */
+        if (!__as_mpi__){               /* is NOT MpiLayer */
+          Dtype layer_loss = layer->Forward(bottom_vecs_[i], top_vecs_[i]);
+          loss += layer_loss;
+        } else {                        /* is MpiLayer */
+          if (__as_distr__) {           /* is DistrMpiLyaer */
+            broadcast(world, loss, 0);
+            broadcast(world, bottom_vecs_[i], 0);
+            broadcast(world, top_vecs_[i], 0);
+          }
+        }
+      } else {                          /* is slave */
+        if (__as_mpi__) {               /* is MpiLayer */
+          if (__as_distr__) {           /* is MpiDistrLayer */
+            broadcast(world, loss, 0);
+            broadcast(world, bottom_vecs_[i], 0);
+            broadcast(world, top_vecs_[i], 0);
+            for (int j = 1; j < size; j++) {
+              if (j != rank) {
+                world.send(j, TAG_BLOB_PIECE, *top_vecs_[i][0]);
+              }
+            }
+          } else {
+            vector<Blob<Dtype>*> local_top(top_vecs_[i].size());
+            for (int k = 0; k < top_vecs_[i].size(); k++) {
+              const vector<int>& complete_shape = top_vecs_[i][k]->shape();
+              vector<int>& local_shape = ShapeForSlave(complete_shape);
+              local_top[k].reset(new Blob<Dtype>(local_shape));
+            }
+            shared_ptr<Blob<Dtype> > top_vec_ptr(new Blob<Dtype>());
+            vector<Blob<Dtype>*> top_vec(1);
+            top_vec[0] =
+            Dtype layer_loss = layer->Forward(bottom_vecs_[i], top_vecs_[i]);
+            loss += layer_loss;
+            /* size-1 slaves */
+            vector<shared_ptr<Blob<Dtype> > > blobs(size - 1);
+            for (int j = 1; j < size; j++) {
+              if (j == rank) {
+                // TODO: shape issue
+                blobs[j].reset(bottom_vecs_[i][0]);  /* only support 1 bottom */
+              } else {
+                Blob<Dtype>* blob = new Blob<Dtype>();
+                world.recv(j, TAG_BLOB_PIECE, *blob);
+                blobs[j].reset(blob);
+              }
+            }
+            bottom_vecs_[i][0] = &Blob::Merge1(blobs);
+          }
+        }
+      }
+
       if (debug_info_) { ForwardDebugInfo(i); }
     }
     return loss;
+  }
+
+  template <typename Dtype>
+  vector<int>& Scheduler<Dtype>::ShapeForSlave(const vector<int>& completeShape) {
+    int rank = world.rank();
+    int slaveCnt = world.size() - 1;
+    vector<int>& shape = *(new vector<int>(completeShape));
+    // TODO: sanity check
+    int d = shape[1];
+    shape[1] /= slaveCnt;
+    if (rank == slaveCnt) { /* last slave */
+      shape[1] += d % slaveCnt;  // take the rest
+    }
+    return shape;
   }
 
   template <typename Dtype>

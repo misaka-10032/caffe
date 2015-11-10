@@ -11,25 +11,29 @@
 namespace caffe {
 
   template <typename Dtype>
-  void MpiSplitLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+  void MpiDistrLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                                         const vector<Blob<Dtype>*>& top) {
-    // TODO
+    // make sure it's in parallel
+    CHECK_GE(parallelism_, 1);
+    // bottom and top are set up previously
+    // make sure bottom and top point to the same blob
+    CHECK_GE(bottom[0], top[0]);
   }
 
   template <typename Dtype>
-  void MpiSplitLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
+  void MpiDistrLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
                                      const vector<Blob<Dtype>*>& top) {
-    // TODO
+    // Already reshaped in previous layer
   }
 
   template <typename Dtype>
-  void MpiSplitLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+  void MpiDistrLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                                          const vector<Blob<Dtype>*>& top) {
     // TODO
   }
 
   template <typename Dtype>
-  void MpiSplitLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
+  void MpiDistrLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
                                           const vector<bool>& propagate_down,
                                           const vector<Blob<Dtype>*>& bottom) {
     // TODO
@@ -40,6 +44,6 @@ namespace caffe {
 //  STUB_GPU(MpiSyncLayer);
 //#endif
 
-  INSTANTIATE_CLASS(MpiSplitLayer);
-  REGISTER_LAYER_CLASS(MpiSplit);
+  INSTANTIATE_CLASS(MpiDistrLayer);
+  REGISTER_LAYER_CLASS(MpiDistr);
 }
