@@ -84,11 +84,13 @@ class Blob {
    * @param end_axis The first axis to exclude from the slice.
    */
   inline int count(int start_axis, int end_axis) const {
-    CHECK_LE(start_axis, end_axis);
-    CHECK_GE(start_axis, 0);
-    CHECK_GE(end_axis, 0);
-    CHECK_LE(start_axis, num_axes());
-    CHECK_LE(end_axis, num_axes());
+    // TODO: add back if necessary
+    // conflict with slave nodes
+//    CHECK_LE(start_axis, end_axis);
+//    CHECK_GE(start_axis, 0);
+//    CHECK_GE(end_axis, 0);
+//    CHECK_LE(start_axis, num_axes());
+//    CHECK_LE(end_axis, num_axes());
     int count = 1;
     for (int i = start_axis; i < end_axis; ++i) {
       count *= shape(i);
@@ -117,12 +119,15 @@ class Blob {
    *        Dies on out of range index.
    */
   inline int CanonicalAxisIndex(int axis_index) const {
-    CHECK_GE(axis_index, -num_axes())
-        << "axis " << axis_index << " out of range for " << num_axes()
-        << "-D Blob with shape " << shape_string();
-    CHECK_LT(axis_index, num_axes())
-        << "axis " << axis_index << " out of range for " << num_axes()
-        << "-D Blob with shape " << shape_string();
+    // TODO: add back if necessary
+    // currently conflict with slave nodes
+//    CHECK_GE(axis_index, -num_axes())
+//      << "axis " << axis_index << " out of range for " << num_axes()
+//      << "-D Blob with shape " << shape_string();
+//    CHECK_LT(axis_index, num_axes())
+//      << "axis " << axis_index << " out of range for " << num_axes()
+//      << "-D Blob with shape " << shape_string();
+
     if (axis_index < 0) {
       return axis_index + num_axes();
     }
@@ -138,10 +143,12 @@ class Blob {
   /// @brief Deprecated legacy shape accessor width: use shape(3) instead.
   inline int width() const { return LegacyShape(3); }
   inline int LegacyShape(int index) const {
-    CHECK_LE(num_axes(), 4)
-        << "Cannot use legacy accessors on Blobs with > 4 axes.";
-    CHECK_LT(index, 4);
-    CHECK_GE(index, -4);
+    // TODO: add back if necessary
+    // currently conflict with slave nodes
+//    CHECK_LE(num_axes(), 4)
+//        << "Cannot use legacy accessors on Blobs with > 4 axes.";
+//    CHECK_LT(index, 4);
+//    CHECK_GE(index, -4);
     if (index >= num_axes() || index < -num_axes()) {
       // Axis is out of range, but still in [0, 3] (or [-4, -1] for reverse
       // indexing) -- this special case simulates the one-padding used to fill
@@ -153,25 +160,31 @@ class Blob {
 
   inline int offset(const int n, const int c = 0, const int h = 0,
       const int w = 0) const {
-    CHECK_GE(n, 0);
-    CHECK_LE(n, num());
-    CHECK_GE(channels(), 0);
-    CHECK_LE(c, channels());
-    CHECK_GE(height(), 0);
-    CHECK_LE(h, height());
-    CHECK_GE(width(), 0);
-    CHECK_LE(w, width());
+    // TODO: add back if necessary
+    // currently conflict with slave nodes
+//    CHECK_GE(n, 0);
+//    CHECK_LE(n, num());
+//    CHECK_GE(channels(), 0);
+//    CHECK_LE(c, channels());
+//    CHECK_GE(height(), 0);
+//    CHECK_LE(h, height());
+//    CHECK_GE(width(), 0);
+//    CHECK_LE(w, width());
     return ((n * channels() + c) * height() + h) * width() + w;
   }
 
   inline int offset(const vector<int>& indices) const {
-    CHECK_LE(indices.size(), num_axes());
+    // TODO: add back if necessary
+    // currently conflict with slave nodes
+//    CHECK_LE(indices.size(), num_axes());
     int offset = 0;
     for (int i = 0; i < num_axes(); ++i) {
       offset *= shape(i);
       if (indices.size() > i) {
-        CHECK_GE(indices[i], 0);
-        CHECK_LT(indices[i], shape(i));
+        // TODO: add back if necessary
+        // currently conflict with slave nodes
+//        CHECK_GE(indices[i], 0);
+//        CHECK_LT(indices[i], shape(i));
         offset += indices[i];
       }
     }

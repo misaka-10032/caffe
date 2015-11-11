@@ -81,6 +81,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   // For each layer, set up its input and output
   bottom_vecs_.resize(param.layer_size());
   top_vecs_.resize(param.layer_size());
+  sliced_top_vecs_.resize(param.layer_size());
   bottom_id_vecs_.resize(param.layer_size());
   param_id_vecs_.resize(param.layer_size());
   top_id_vecs_.resize(param.layer_size());
@@ -144,14 +145,24 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       // Set up size of top blobs using root_net_
       const vector<Blob<Dtype>*>& base_top = root_net_->top_vecs_[layer_id];
       const vector<Blob<Dtype>*>& this_top = this->top_vecs_[layer_id];
+
+      // TODO: not tested
+      const vector<Blob<Dtype>*>& base_sliced_top = root_net_->sliced_top_vecs_[layer_id];
+      const vector<Blob<Dtype>*>& this_sliced_top = this->sliced_top_vecs_[layer_id];
+
       for (int top_id = 0; top_id < base_top.size(); ++top_id) {
         this_top[top_id]->ReshapeLike(*base_top[top_id]);
+
+        // TODO: not tested
+        this_sliced_top[top_id]->ReshapeLike(*base_sliced_top[top_id]);
+
         LOG(INFO) << "Created top blob " << top_id << " (shape: "
             << this_top[top_id]->shape_string() <<  ") for shared layer "
             << layer_param.name();
       }
     } else {
-      layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
+      /* rocky note: normally goes this flow */
+      scheduler->SetUpLayer(layer_id);
     }
     LOG_IF(INFO, Caffe::root_solver())
         << "Setting up " << layer_names_[layer_id];
@@ -172,8 +183,12 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
         << "Memory required for data: " << memory_used_ * sizeof(Dtype);
     const int param_size = layer_param.param_size();
     const int num_param_blobs = layers_[layer_id]->blobs().size();
-    CHECK_LE(param_size, num_param_blobs)
+
+    if (scheduler->getRank() == 0) {
+      CHECK_LE(param_size, num_param_blobs)
         << "Too many params specified for layer " << layer_param.name();
+    }
+
     ParamSpec default_param_spec;
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       const ParamSpec* param_spec = (param_id < param_size) ?

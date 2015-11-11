@@ -22,7 +22,7 @@ namespace caffe {
  * TODO(dox): more thorough description.
  */
 
-  template <typename Dtype> class Scheduler;
+template <typename Dtype> class Scheduler;
 
 template <typename Dtype>
 class Net {
@@ -263,6 +263,8 @@ class Net {
   vector<vector<bool> > bottom_need_backward_;
   /// top_vecs stores the vectors containing the output for each layer
   vector<vector<Blob<Dtype>*> > top_vecs_;
+  /// sliced_top_vecs stores the sliced top_vecs for MpiLayers
+  vector<vector<Blob<Dtype>*> > sliced_top_vecs_;
   vector<vector<int> > top_id_vecs_;
   /// Vector of weight in the loss (or objective) function of each net blob,
   /// indexed by blob_id.

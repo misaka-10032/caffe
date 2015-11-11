@@ -7,6 +7,7 @@
 
 #include <boost/mpi.hpp>
 #include <boost/mpi/collectives.hpp>
+#include <boost/serialization/string.hpp>
 
 #include "caffe/common.hpp"
 #include "caffe/net.hpp"
@@ -17,10 +18,48 @@ namespace mpi = boost::mpi;
 
 
 namespace caffe {
+  template<typename Dtype>
+  Scheduler<Dtype>::Scheduler() { }
 
   template<typename Dtype>
-  Scheduler<Dtype> *Scheduler<Dtype>::instance_ = NULL;
+  Scheduler<Dtype>* Scheduler<Dtype>::instance_ = NULL;
 
+  template<typename Dtype>
+  std::mutex Scheduler<Dtype>::mutex_;
+
+  template<typename Dtype>
+  Scheduler<Dtype>* Scheduler<Dtype>::Get() {
+//    static Scheduler<Dtype> scheduler;
+//    return &scheduler;
+    if (!instance_) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (!instance_) {
+        instance_ = new Scheduler<Dtype>();
+      }
+    }
+    return instance_;
+  }
+
+  template <typename Dtype>
+  void Scheduler<Dtype>::SetUpLayer(int layer_id) {
+    shared_ptr<Layer<Dtype> >& layer = net_->layers_[layer_id];
+    vector<vector<Blob<Dtype>*> >& bottom_vecs_ = net_->bottom_vecs_;
+    vector<vector<Blob<Dtype>*> >& top_vecs_ = net_->top_vecs_;
+    vector<vector<Blob<Dtype>*> >& sliced_top_vecs = net_->sliced_top_vecs_;
+    MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
+
+    if (getRank() == 0) {  /* is master */
+      layer->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
+    } else {               /* is slave */
+      // TODO: think of a way not to create useless layers for slaves
+      // TODO: currently bottom - MpiFc gets broken
+      if (__as_mpi__) {
+        layer->SetUp(bottom_vecs_[layer_id], sliced_top_vecs[layer_id]);
+      } else {
+        layer->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
+      }
+    }
+  }
 
   template <typename Dtype>
   void Scheduler<Dtype>::InputDebugInfo(const int input_id) {
@@ -112,6 +151,7 @@ namespace caffe {
     vector<Blob<Dtype>*>& net_input_blobs_ = net_->net_input_blobs_;
     vector<vector<Blob<Dtype>*> > bottom_vecs_ = net_->bottom_vecs_;
     vector<vector<Blob<Dtype>*> > top_vecs_ = net_->top_vecs_;
+    vector<vector<Blob<Dtype>*> > sliced_top_vecs_ = net_->sliced_top_vecs_;
 
     CHECK_GE(start, 0);
     CHECK_LT(end, layers_.size());
@@ -123,65 +163,101 @@ namespace caffe {
     }
     for (int i = start; i <= end; ++i) {
       // LOG(ERROR) << "Forwarding " << layer_names_[i];
-//      shared_ptr<Layer<Dtype> > layer = layers_[i];
-//      MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
-//      MpiDistrLayer<Dtype>* __as_distr__ = dynamic_cast<MpiDistrLayer<Dtype>*>(layer.get());
-//      int size = world.size();
-//      int rank = world.rank();
-//      if (rank == 0) {                  /* is master */
-//        if (!__as_mpi__){               /* is NOT MpiLayer */
-//          Dtype layer_loss = layer->Forward(bottom_vecs_[i], top_vecs_[i]);
-//          loss += layer_loss;
-//        } else {                        /* is MpiLayer */
-//          if (__as_distr__) {           /* is DistrMpiLyaer */
-//            broadcast(world, loss, 0);
-//            broadcast(world, bottom_vecs_[i], 0);
-//            broadcast(world, top_vecs_[i], 0);
-//          }
-//        }
-//      } else {                          /* is slave */
-//        if (__as_mpi__) {               /* is MpiLayer */
-//          if (__as_distr__) {           /* is MpiDistrLayer */
-//            broadcast(world, loss, 0);
-//            broadcast(world, bottom_vecs_[i], 0);
-//            broadcast(world, top_vecs_[i], 0);
-//            for (int j = 1; j < size; j++) {
-//              if (j != rank) {
-//                world.send(j, TAG_BLOB_PIECE, *top_vecs_[i][0]);
-//              }
-//            }
-//          } else {
-//            vector<Blob<Dtype>*> local_top(top_vecs_[i].size());
-//            for (int k = 0; k < top_vecs_[i].size(); k++) {
-//              const vector<int>& complete_shape = top_vecs_[i][k]->shape();
-//              vector<int>& local_shape = ShapeForSlave(complete_shape);
-//              local_top[k].reset(new Blob<Dtype>(local_shape));
-//            }
-//            shared_ptr<Blob<Dtype> > top_vec_ptr(new Blob<Dtype>());
-//            vector<Blob<Dtype>*> top_vec(1);
-//            top_vec[0] =
-//            Dtype layer_loss = layer->Forward(bottom_vecs_[i], top_vecs_[i]);
-//            loss += layer_loss;
-//            /* size-1 slaves */
-//            vector<shared_ptr<Blob<Dtype> > > blobs(size - 1);
-//            for (int j = 1; j < size; j++) {
-//              if (j == rank) {
-//                // TODO: shape issue
-//                blobs[j].reset(bottom_vecs_[i][0]);  /* only support 1 bottom */
-//              } else {
-//                Blob<Dtype>* blob = new Blob<Dtype>();
-//                world.recv(j, TAG_BLOB_PIECE, *blob);
-//                blobs[j].reset(blob);
-//              }
-//            }
-//            bottom_vecs_[i][0] = &Blob::Merge1(blobs);
-//          }
-//        }
-//      }
+      vector<Blob<Dtype>*>& top_vecs = top_vecs_[i];
+      vector<Blob<Dtype>*>& sliced_top_vecs = sliced_top_vecs_[i];
+      vector<Blob<Dtype>*>& bottom_vecs = bottom_vecs_[i];
+      shared_ptr<Layer<Dtype> > layer = layers_[i];
+      MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
+      int size = world.size();
+      int rank = world.rank();
+      int slave_cnt = size - 1;
+      if (rank == 0) {                  /* is master */
+        if (!__as_mpi__){               /* is NOT MpiLayer */
+          Dtype layer_loss = layer->Forward(bottom_vecs, top_vecs);
+          loss += layer_loss;
+        } else {                        /* is MpiLayer */
+          /* 1. broadcast */
+          int bottom_cnt = bottom_vecs.size();
+          for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
+            // TODO: build skeleton to make more efficient
+            // TODO: better serialization
+            shared_ptr<BlobProto> blobProto;
+            bottom_vecs[bottom_id]->ToProto(blobProto.get(), true);
+            string vec_string = blobProto->SerializeAsString();
+            BroadcastBlob(*bottom_vecs[bottom_id], 0);
+          }
+          /* 2. receive & merge & store */
+          int top_cnt = top_vecs.size();
+          for (int top_id = 0; top_id < top_cnt; top_id++) {
+            vector<shared_ptr<Blob<Dtype> > > blobs(slave_cnt);
+            for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
+              blobs[slave_id-1].reset();  // TODO: need set size?
+              /* first blob, then loss. order matters */
+              RecvBlob(slave_id, top_id, *blobs[slave_id-1]);
+              int local_loss;
+              world.recv(slave_id, top_id, local_loss);
+              loss += local_loss;
+            }
+            shared_ptr<Blob<Dtype> > blob(top_vecs[top_id]);
+            Blob<Dtype>::Merge1(blobs, blob);
+          }
+        }
+      } else {                          /* is slave */
+        if (__as_mpi__) {               /* is MpiLayer */
+          /* 1. broadcast recv bottoms from master */
+          broadcast(world, loss, 0);
+          int bottom_cnt = bottom_vecs.size();
+          for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
+            // TODO: build skeleton to make more efficient
+            BroadcastBlob(*bottom_vecs[bottom_id], 0);
+          }
+          /* 2. do local job */
+          Dtype layer_loss = layer->Forward(bottom_vecs, sliced_top_vecs);
+          /* 3. send blob and loss to master */
+          int top_cnt = top_vecs.size();
+          for (int top_id = 0; top_id < top_cnt; top_id++) {
+            /* order matters */
+            SendBlob(0, top_id, *sliced_top_vecs[top_id]);
+            world.send(0, top_id, layer_loss);
+          }
+        }
+      }
 
       if (debug_info_) { ForwardDebugInfo(i); }
     }
     return loss;
+  }
+
+  template <typename Dtype>
+  void Scheduler<Dtype>::BroadcastBlob(Blob<Dtype>& blob, int root) {
+    shared_ptr<BlobProto> blobProto;
+    blob.ToProto(blobProto.get(), true);
+    string blob_str;
+    if (world.rank() == root) {
+      blob_str = blobProto->SerializeAsString();
+    }
+    broadcast(world, blob_str, root);
+    if (world.rank() != root) {
+      blobProto->ParseFromString(blob_str);
+      blob.FromProto(*blobProto, false);
+    }
+  }
+
+  template <typename Dtype>
+  void Scheduler<Dtype>::SendBlob(int dst, int tag, Blob<Dtype>& blob) {
+    shared_ptr<BlobProto> blobProto;
+    blob.ToProto(blobProto.get(), true);
+    string blob_str = blobProto->SerializeAsString();
+    world.send(dst, tag, blob_str);
+  }
+
+  template <typename Dtype>
+  void Scheduler<Dtype>::RecvBlob(int src, int tag, Blob<Dtype>& blob) {
+    string blob_str;
+    world.recv(src, tag, blob_str);
+    shared_ptr<BlobProto> blobProto;
+    blobProto->ParseFromString(blob_str);
+    blob.FromProto(*blobProto, true);
   }
 
 //  template <typename Dtype>

@@ -19,12 +19,7 @@ namespace caffe {
   template<typename Dtype>
   class Scheduler {
   public:
-    static Scheduler<Dtype> *Get() {
-      if (!instance_) {
-        instance_ = new Scheduler<Dtype>();
-      }
-      return instance_;
-    }
+    static Scheduler<Dtype> *Get();
 
     inline int getParallelism() {
       return world.size() - 1;  // only slaves work in parallel
@@ -42,20 +37,26 @@ namespace caffe {
     void ForwardDebugInfo(const int layer_id);
     void BackwardDebugInfo(const int layer_id);
 
+    void SetUpLayer(int layer_id);
+
     Dtype ForwardFromTo(int start, int end);
     void BackwardFromTo(int start, int end);
 
-//    vector<int>& Scheduler<Dtype>::ShapeForSlave(const vector<int>& complete_shape);
+    void BroadcastBlob(Blob<Dtype>& blob, int root);
+    void SendBlob(int dst, int tag, Blob<Dtype>& blob);
+    void RecvBlob(int src, int tag, Blob<Dtype>& blob);
 
   protected:
-    Scheduler<Dtype>() { }
+    Scheduler<Dtype>();
 
     mpi::environment env;
     mpi::communicator world;
 
   private:
     static const int TAG_BLOB_PIECE = 1;
+    static const int TAG_LOSS = 2;
     static Scheduler<Dtype> *instance_;
+    static std::mutex mutex_;
     Net<Dtype> *net_;
   };
 }
