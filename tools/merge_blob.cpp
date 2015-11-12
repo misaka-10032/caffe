@@ -7,6 +7,7 @@
 using std::cout;
 using std::endl;
 using caffe::Blob;
+using caffe::BlobProto;
 using caffe::Caffe;
 using caffe::vector;
 using caffe::shared_ptr;
@@ -33,8 +34,12 @@ int main(int argc, char **argv) {
     }
   cout << endl << endl;
 
-  shared_ptr<Blob<float> > blob;
-  Blob<float>::Merge1(blobs, blob);
+  vector<int> shapeMerge = blobs[0]->shape();
+  shapeMerge[1] *= pieces - 1;
+  shapeMerge[1] += blobs[pieces-1]->shape()[1];
+
+  shared_ptr<Blob<float> > blob(new Blob<float>(shapeMerge));
+  Blob<float>::Merge1(blobs, blob.get());
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 10; j++) {
       int idx = i * 10 + j;
@@ -42,6 +47,10 @@ int main(int argc, char **argv) {
     }
     cout << endl;
   }
+
+//  shared_ptr<BlobProto> blobProto(new BlobProto());
+//  blob->ToProto(blobProto.get(), true);
+//  cout << blobProto->SerializeAsString();
 
   return 0;
 }

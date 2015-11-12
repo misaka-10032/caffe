@@ -235,52 +235,65 @@ void Solver<Dtype>::Step(int iters) {
       smoothed_loss += (loss - losses[idx]) / average_loss;
       losses[idx] = loss;
     }
-    if (display) {
-      LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
-          << ", loss = " << smoothed_loss;
-      const vector<Blob<Dtype>*>& result = net_->output_blobs();
-      int score_index = 0;
-      for (int j = 0; j < result.size(); ++j) {
-        const Dtype* result_vec = result[j]->cpu_data();
-        const string& output_name =
-            net_->blob_names()[net_->output_blob_indices()[j]];
-        const Dtype loss_weight =
-            net_->blob_loss_weights()[net_->output_blob_indices()[j]];
-        for (int k = 0; k < result[j]->count(); ++k) {
-          ostringstream loss_msg_stream;
-          if (loss_weight) {
-            loss_msg_stream << " (* " << loss_weight
-                            << " = " << loss_weight * result_vec[k] << " loss)";
+
+    Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
+    if (scheduler->getRank() == 0) {    /* master */
+      // rocky: only master does such bunch of things
+
+      if (display) {
+        LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
+                                           << ", loss = " << smoothed_loss;
+        const vector<Blob<Dtype> *> &result = net_->output_blobs();
+        int score_index = 0;
+        for (int j = 0; j < result.size(); ++j) {
+          const Dtype *result_vec = result[j]->cpu_data();
+          const string &output_name =
+              net_->blob_names()[net_->output_blob_indices()[j]];
+          const Dtype loss_weight =
+              net_->blob_loss_weights()[net_->output_blob_indices()[j]];
+          for (int k = 0; k < result[j]->count(); ++k) {
+            ostringstream loss_msg_stream;
+            if (loss_weight) {
+              loss_msg_stream << " (* " << loss_weight
+              << " = " << loss_weight * result_vec[k] << " loss)";
+            }
+            LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
+                                               << score_index++ << ": " <<
+                                               output_name << " = "
+                                               << result_vec[k] <<
+                                               loss_msg_stream.str();
           }
-          LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
-              << score_index++ << ": " << output_name << " = "
-              << result_vec[k] << loss_msg_stream.str();
         }
       }
-    }
-    for (int i = 0; i < callbacks_.size(); ++i) {
-      callbacks_[i]->on_gradients_ready();
-    }
-    ApplyUpdate();
+      for (int i = 0; i < callbacks_.size(); ++i) {
+        callbacks_[i]->on_gradients_ready();
+      }
+      ApplyUpdate();
 
-    // Increment the internal iter_ counter -- its value should always indicate
-    // the number of times the weights have been updated.
-    ++iter_;
+      // Increment the internal iter_ counter -- its value should always indicate
+      // the number of times the weights have been updated.
+      ++iter_;
 
-    SolverAction::Enum request = GetRequestedAction();
+      SolverAction::Enum request = GetRequestedAction();
 
-    // Save a snapshot if needed.
-    if ((param_.snapshot()
-         && iter_ % param_.snapshot() == 0
-         && Caffe::root_solver()) ||
-         (request == SolverAction::SNAPSHOT)) {
-      Snapshot();
+      // Save a snapshot if needed.
+      if ((param_.snapshot()
+           && iter_ % param_.snapshot() == 0
+           && Caffe::root_solver()) ||
+          (request == SolverAction::SNAPSHOT)) {
+        Snapshot();
+      }
+
+    } else {          /* slave */
+      // rocky: slave may also need to exit when needed
+      SolverAction::Enum request = GetRequestedAction();
+      if (SolverAction::STOP == request) {
+        requested_early_exit_ = true;
+        // Break out of training loop.
+        break;
+      }
     }
-    if (SolverAction::STOP == request) {
-      requested_early_exit_ = true;
-      // Break out of training loop.
-      break;
-    }
+
   }
 }
 

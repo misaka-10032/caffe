@@ -5,6 +5,7 @@
 #include "caffe/util/hdf5.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/upgrade_proto.hpp"
+#include "caffe/mpi/scheduler.h"
 
 namespace caffe {
 

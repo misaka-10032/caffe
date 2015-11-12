@@ -13,26 +13,26 @@ namespace caffe {
   template <typename Dtype>
   void MpiSyncLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                                        const vector<Blob<Dtype>*>& top) {
-    // TODO
+    // do nothing
   }
 
   template <typename Dtype>
   void MpiSyncLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
                                     const vector<Blob<Dtype>*>& top) {
-    // TODO
+    // do nothing
   }
 
   template <typename Dtype>
   void MpiSyncLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                                         const vector<Blob<Dtype>*>& top) {
-    // TODO
+    // do nothing
   }
 
   template <typename Dtype>
   void MpiSyncLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
                                          const vector<bool>& propagate_down,
                                          const vector<Blob<Dtype>*>& bottom) {
-    // TODO
+    // do nothing
   }
 
 

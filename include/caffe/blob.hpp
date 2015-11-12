@@ -290,7 +290,7 @@ class Blob {
    * Merge at first dimension
    */
   static void Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
-                     shared_ptr<Blob<Dtype> >& blob);
+                     Blob<Dtype>* blob);
 
  protected:
   shared_ptr<SyncedMemory> data_;

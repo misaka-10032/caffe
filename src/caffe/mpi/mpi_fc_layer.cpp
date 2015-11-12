@@ -24,12 +24,22 @@ void MpiFcLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   bias_term_ = this->layer_param_.inner_product_param().bias_term();
   N_ = num_output;
 
-  if (this->rank_ == this->parallelism_) {
-    /* Last worker */
-    N_ = N_ / this->parallelism_ + N_ % this->parallelism_;
+  LOG(INFO) << "**********";
+  LOG(INFO) << "**********";
+  if (this->rank_ != 0) {  /* Slave */
+    LOG(INFO) << "slave";
+    if (this->rank_ == this->parallelism_) {
+      /* Last worker */
+      N_ = N_ / this->parallelism_ + N_ % this->parallelism_;
+    } else {
+      N_ /= this->parallelism_;
+    }
   } else {
-    N_ /= this->parallelism_;
+    LOG(INFO) << "master";
+    LOG(INFO) << N_;
   }
+  LOG(INFO) << "**********";
+  LOG(INFO) << "**********";
 
   const int axis = bottom[0]->CanonicalAxisIndex(
       this->layer_param_.inner_product_param().axis());
@@ -87,6 +97,7 @@ void MpiFcLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   top_shape.resize(axis + 1);
   top_shape[axis] = N_;
   top[0]->Reshape(top_shape);
+
   // Set up the bias multiplier
   if (bias_term_) {
     vector<int> bias_shape(1, M_);

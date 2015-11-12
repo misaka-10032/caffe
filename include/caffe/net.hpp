@@ -252,6 +252,10 @@ class Net {
   vector<bool> layer_need_backward_;
   /// @brief the blobs storing intermediate results between the layer.
   vector<shared_ptr<Blob<Dtype> > > blobs_;
+
+  /* sliced blobs for slaves */
+  vector<shared_ptr<Blob<Dtype> > > sliced_blobs_;
+
   vector<string> blob_names_;
   map<string, int> blob_names_index_;
   vector<bool> blob_need_backward_;

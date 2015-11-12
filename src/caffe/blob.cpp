@@ -590,7 +590,7 @@ void Blob<Dtype>::Split1(shared_ptr<Blob<Dtype> >& blob, int piece,
 
 template <typename Dtype>
 void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
-                         shared_ptr<Blob<Dtype> >& blob) {
+                         Blob<Dtype>* blob) {
   // TODO: assert piece > 1
   // TODO: assert blob have valid shape
 
@@ -601,7 +601,11 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
   shape[1] *= piece - 1;
   shape[1] += blobs[piece-1]->shape()[1];
 
-  blob.reset(new Blob<Dtype>(shape));
+  int size = shape.size();
+  for (int i = 0; i < size; i++) {
+    CHECK_EQ(shape[i], blob->shape()[i]);
+  }
+
   int dim0 = shape[0];
   int dividedOffset = blobs[0]->GetBlockOffset(axis);
   int lastOffset = blobs[piece - 1]->GetBlockOffset(axis);

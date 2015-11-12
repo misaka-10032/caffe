@@ -13,6 +13,7 @@ namespace bp = boost::python;
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/util/signal_handler.h"
+#include "caffe/mpi/scheduler.h"
 
 using caffe::Blob;
 using caffe::Caffe;
@@ -196,6 +197,32 @@ int train() {
   shared_ptr<caffe::Solver<float> >
       solver(caffe::SolverRegistry<float>::CreateSolver(solver_param));
 
+  if (caffe::Scheduler<float>::Get()->getRank() != 0) {
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "slave created solver";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+  } else {
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "master created solver";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+    LOG(INFO) << "**********";
+  }
+
   solver->SetActionFunction(signal_handler.GetActionFunction());
 
   if (FLAGS_snapshot.size()) {
@@ -204,6 +231,7 @@ int train() {
   } else if (FLAGS_weights.size()) {
     CopyLayers(solver.get(), FLAGS_weights);
   }
+
 
   if (gpus.size() > 1) {
     caffe::P2PSync<float> sync(solver, NULL, solver->param());
@@ -376,6 +404,11 @@ int time() {
 RegisterBrewFunction(time);
 
 int main(int argc, char** argv) {
+  // rocky
+  mpi::environment env;
+  mpi::communicator world;
+  caffe::Scheduler<float>::Init(&env, &world);
+
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
   // Usage message.

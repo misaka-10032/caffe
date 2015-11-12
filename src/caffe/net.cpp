@@ -420,6 +420,11 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
         << layer_param->name() << " -> " << blob_name << " (in-place)";
     top_vecs_[layer_id].push_back(blobs_[(*blob_name_to_idx)[blob_name]].get());
     top_id_vecs_[layer_id].push_back((*blob_name_to_idx)[blob_name]);
+
+    // rocky
+    sliced_top_vecs_[layer_id].push_back(
+        sliced_blobs_[(*blob_name_to_idx)[blob_name]].get());
+
   } else if (blob_name_to_idx &&
              blob_name_to_idx->find(blob_name) != blob_name_to_idx->end()) {
     // If we are not doing in-place computation but have duplicated blobs,
@@ -440,9 +445,15 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
     blobs_.push_back(blob_pointer);
     blob_names_.push_back(blob_name);
     blob_need_backward_.push_back(false);
+
+    // rocky
+    shared_ptr<Blob<Dtype> > sliced_blob_pointer(new Blob<Dtype>());
+    sliced_blobs_.push_back(sliced_blob_pointer);
+
     if (blob_name_to_idx) { (*blob_name_to_idx)[blob_name] = blob_id; }
     if (layer_id == -1) {
       // Set the (explicitly specified) dimensions of the input blob.
+      // TODO: why need reshape here? done in layer?
       if (param.input_dim_size() > 0) {
         blob_pointer->Reshape(param.input_dim(top_id * 4),
                               param.input_dim(top_id * 4 + 1),
@@ -456,6 +467,9 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
     } else {
       top_id_vecs_[layer_id].push_back(blob_id);
       top_vecs_[layer_id].push_back(blob_pointer.get());
+
+      // rocky
+      sliced_top_vecs_[layer_id].push_back(sliced_blob_pointer.get());
     }
   }
   if (available_blobs) { available_blobs->insert(blob_name); }
