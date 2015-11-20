@@ -33,18 +33,14 @@ namespace caffe {
       return world->rank();
     }
 
-    inline void setNet(Net<Dtype> *net_) {
-      this->net_ = net_;
-    }
+    void InputDebugInfo(Net<Dtype>* net, const int input_id);
+    void ForwardDebugInfo(Net<Dtype>* net, const int layer_id);
+    void BackwardDebugInfo(Net<Dtype>* net, const int layer_id);
 
-    void InputDebugInfo(const int input_id);
-    void ForwardDebugInfo(const int layer_id);
-    void BackwardDebugInfo(const int layer_id);
+    void SetUpLayer(Net<Dtype>* net, int layer_id);
 
-    void SetUpLayer(int layer_id);
-
-    Dtype ForwardFromTo(int start, int end);
-    void BackwardFromTo(int start, int end);
+    Dtype ForwardFromTo(Net<Dtype>* net, int start, int end);
+    void BackwardFromTo(Net<Dtype>* net, int start, int end);
 
     void BroadcastBlob(Blob<Dtype>& blob, int root);
     void BroadcastBlobs(vector<Blob<Dtype>*>& blobs, int root);
@@ -83,7 +79,6 @@ namespace caffe {
     static const int TAG_LOSS = 200;
     static shared_ptr<Scheduler<Dtype> > instance_;
     static std::mutex mutex_;
-    Net<Dtype> *net_;
   };
 }
 #endif //CAFFE_SCHEDULER_H

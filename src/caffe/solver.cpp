@@ -205,7 +205,7 @@ void Solver<Dtype>::Step(int iters) {
         && (iter_ > 0 || param_.test_initialization())
         && Caffe::root_solver()) {
       // TODO: uncomment this
-//      TestAll();
+      TestAll();
       if (requested_early_exit_) {
         // Break out of the while loop because stop was requested while testing.
         break;

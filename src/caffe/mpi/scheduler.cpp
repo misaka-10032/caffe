@@ -48,7 +48,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  void Scheduler<Dtype>::SetUpLayer(int layer_id) {
+  void Scheduler<Dtype>::SetUpLayer(Net<Dtype>* net_, int layer_id) {
     shared_ptr<Layer<Dtype> >& layer = net_->layers_[layer_id];
     vector<Blob<Dtype>*>& bottom_vecs = net_->bottom_vecs_[layer_id];
     vector<Blob<Dtype>*>& top_vecs = net_->top_vecs_[layer_id];
@@ -70,7 +70,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  void Scheduler<Dtype>::InputDebugInfo(const int input_id) {
+  void Scheduler<Dtype>::InputDebugInfo(Net<Dtype>* net_, const int input_id) {
     vector<Blob<Dtype>*>& net_input_blobs_ = net_->net_input_blobs_;
     vector<string>& blob_names_ = net_->blob_names_;
     vector<int>& net_input_blob_indices_ = net_->net_input_blob_indices_;
@@ -84,7 +84,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  void Scheduler<Dtype>::ForwardDebugInfo(const int layer_id) {
+  void Scheduler<Dtype>::ForwardDebugInfo(Net<Dtype>* net_, const int layer_id) {
     vector<vector<Blob<Dtype>*> >& bottom_vecs_ = net_->bottom_vecs_;
     vector<vector<Blob<Dtype>*> >& top_vecs_ = net_->top_vecs_;
     vector<string>& blob_names_ = net_->blob_names_;
@@ -119,7 +119,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  void Scheduler<Dtype>::BackwardDebugInfo(const int layer_id) {
+  void Scheduler<Dtype>::BackwardDebugInfo(Net<Dtype>* net_, const int layer_id) {
     vector<vector<Blob<Dtype>*> >& bottom_vecs_ = net_->bottom_vecs_;
     vector<string>& blob_names_ = net_->blob_names_;
     vector<string>& layer_names_ = net_->layer_names_;
@@ -153,7 +153,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  Dtype Scheduler<Dtype>::ForwardFromTo(int start, int end) {
+  Dtype Scheduler<Dtype>::ForwardFromTo(Net<Dtype>* net_, int start, int end) {
     bool debug_info_ = net_->debug_info_;
     vector<shared_ptr<Layer<Dtype> > >& layers_ = net_->layers_;
     vector<Blob<Dtype>*>& net_input_blobs_ = net_->net_input_blobs_;
@@ -167,7 +167,7 @@ namespace caffe {
     Dtype loss = 0;
     if (debug_info_) {
       for (int i = 0; i < net_input_blobs_.size(); ++i) {
-        InputDebugInfo(i);
+        InputDebugInfo(net_, i);
       }
     }
 
@@ -228,7 +228,7 @@ namespace caffe {
         }
       }
 
-      if (debug_info_) { ForwardDebugInfo(i); }
+      if (debug_info_) { ForwardDebugInfo(net_, i); }
     }
     return loss;
   }
@@ -277,7 +277,7 @@ namespace caffe {
   }
 
   template <typename Dtype>
-  void Scheduler<Dtype>::BackwardFromTo(int start, int end) {
+  void Scheduler<Dtype>::BackwardFromTo(Net<Dtype>* net_, int start, int end) {
     bool debug_info_ = net_->debug_info_;
     vector<shared_ptr<Layer<Dtype> > >& layers_ = net_->layers_;
     vector<vector<Blob<Dtype>*> > bottom_vecs_ = net_->bottom_vecs_;
@@ -291,7 +291,7 @@ namespace caffe {
       if (layer_need_backward_[i]) {
         layers_[i]->Backward(
             top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
-        if (debug_info_) { BackwardDebugInfo(i); }
+        if (debug_info_) { BackwardDebugInfo(net_, i); }
       }
     }
   }

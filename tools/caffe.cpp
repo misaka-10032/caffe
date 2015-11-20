@@ -197,32 +197,6 @@ int train() {
   shared_ptr<caffe::Solver<float> >
       solver(caffe::SolverRegistry<float>::CreateSolver(solver_param));
 
-  if (caffe::Scheduler<float>::Get()->getRank() != 0) {
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "slave created solver";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-  } else {
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "master created solver";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-    LOG(INFO) << "**********";
-  }
-
   solver->SetActionFunction(signal_handler.GetActionFunction());
 
   if (FLAGS_snapshot.size()) {

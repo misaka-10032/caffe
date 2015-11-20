@@ -44,7 +44,6 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
 
   // Get the singleton scheduler
   Scheduler<Dtype> *scheduler = Scheduler<Dtype>::Get();
-  scheduler->setNet(this);
 
   // Set phase from the state.
   phase_ = in_param.state().phase();
@@ -162,7 +161,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     } else {
       /* rocky note: normally goes this flow */
-      scheduler->SetUpLayer(layer_id);
+      scheduler->SetUpLayer(this, layer_id);
     }
     LOG_IF(INFO, Caffe::root_solver())
         << "Setting up " << layer_names_[layer_id];
@@ -599,7 +598,7 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
 
 template <typename Dtype>
 Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
-  return Scheduler<Dtype>::Get()->ForwardFromTo(start, end);
+  return Scheduler<Dtype>::Get()->ForwardFromTo(this, start, end);
 }
 
 template <typename Dtype>
@@ -655,7 +654,7 @@ string Net<Dtype>::Forward(const string& input_blob_protos, Dtype* loss) {
 
 template <typename Dtype>
 void Net<Dtype>::BackwardFromTo(int start, int end) {
-  Scheduler<Dtype>::Get()->BackwardFromTo(start, end);
+  Scheduler<Dtype>::Get()->BackwardFromTo(this, start, end);
 }
 
 template <typename Dtype>
