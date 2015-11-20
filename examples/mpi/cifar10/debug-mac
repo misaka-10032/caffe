@@ -1,4 +1,4 @@
 #!/bin/bash
 
 #env PATH=$PATH:$CAFFE_ROOT/examples/mpi  mpirun -np 3 debug-mac-osascript
-mpirun -np 3 -wdir $CAFFE_ROOT xterm -geometry 128x48 -e lldb
+mpirun -np 3 -wdir $CAFFE_ROOT xterm -geometry 128x72 -e lldb

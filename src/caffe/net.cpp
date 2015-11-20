@@ -4,7 +4,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <caffe/mpi/scheduler.h>
 
 #include "hdf5.h"
 
@@ -17,6 +16,8 @@
 #include "caffe/util/insert_splits.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
+#include "caffe/mpi/scheduler.h"
+#include "caffe/mpi/mpi_layers.h"
 
 #include "caffe/test/test_caffe_main.hpp"
 
@@ -298,7 +299,10 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   for (size_t layer_id = 0; layer_id < layer_names_.size(); ++layer_id) {
     layer_names_index_[layer_names_[layer_id]] = layer_id;
   }
-  ShareWeights();
+
+  // TODO: support sharing weights later
+//  ShareWeights();
+
   debug_info_ = param.debug_info();
 
   LOG_IF(INFO, Caffe::root_solver()) << "Network initialization done.";
@@ -524,20 +528,30 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
       &layer_param.param(param_id) : &default_param_spec;
   if (!param_size || !param_name.size() || (param_name.size() &&
       param_names_index_.find(param_name) == param_names_index_.end())) {
-    // This layer "owns" this parameter blob -- it is either anonymous
-    // (i.e., not given a param_name) or explicitly given a name that we
-    // haven't already seen.
-    param_owners_.push_back(-1);
-    if (param_name.size()) {
-      param_names_index_[param_name] = net_param_id;
+
+    // rocky: master and slaves have different learnable params
+    Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
+    MpiLayer<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiLayer<Dtype>*>(layers_[layer_id].get());
+    if ((scheduler->getRank() == 0 && !__as_mpi__) ||
+        (scheduler->getRank() != 0 && __as_mpi__)) {
+
+      // This layer "owns" this parameter blob -- it is either anonymous
+      // (i.e., not given a param_name) or explicitly given a name that we
+      // haven't already seen.
+      param_owners_.push_back(-1);
+      if (param_name.size()) {
+        param_names_index_[param_name] = net_param_id;
+      }
+      const int learnable_param_id = learnable_params_.size();
+      learnable_params_.push_back(params_[net_param_id].get());
+      learnable_param_ids_.push_back(learnable_param_id);
+      has_params_lr_.push_back(param_spec->has_lr_mult());
+      has_params_decay_.push_back(param_spec->has_decay_mult());
+      params_lr_.push_back(param_spec->lr_mult());
+      params_weight_decay_.push_back(param_spec->decay_mult());
     }
-    const int learnable_param_id = learnable_params_.size();
-    learnable_params_.push_back(params_[net_param_id].get());
-    learnable_param_ids_.push_back(learnable_param_id);
-    has_params_lr_.push_back(param_spec->has_lr_mult());
-    has_params_decay_.push_back(param_spec->has_decay_mult());
-    params_lr_.push_back(param_spec->lr_mult());
-    params_weight_decay_.push_back(param_spec->decay_mult());
+
   } else {
     // Named param blob with name we've seen before: share params
     const int owner_net_param_id = param_names_index_[param_name];

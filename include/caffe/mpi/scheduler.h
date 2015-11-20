@@ -18,6 +18,20 @@ namespace mpi = boost::mpi;
 namespace caffe {
   template<typename Dtype> class Net;
 
+  /**
+   * Uses all-reduce scheme. Require at least a master and a slave.
+   * Master is responsible for collect and distribute data.
+   * Slave is responsible for calculation.
+   *
+   * For model parallelism:
+   * Master holds
+   *   1) all the data
+   *   2) non-mpi layer parameters
+   * Slave (mainly for mpi layers) holds
+   *   1) Its sliced data
+   *   2) Its layer params (master doesn't hold!)
+   *
+   */
   template<typename Dtype>
   class Scheduler {
   public:
@@ -42,6 +56,7 @@ namespace caffe {
     Dtype ForwardFromTo(Net<Dtype>* net, int start, int end);
     void BackwardFromTo(Net<Dtype>* net, int start, int end);
 
+    void BroadcastLoss(Dtype& loss, int root);
     void BroadcastBlob(Blob<Dtype>& blob, int root);
     void BroadcastBlobs(vector<Blob<Dtype>*>& blobs, int root);
     void SendBlob(int dst, int tag, Blob<Dtype>& blob);

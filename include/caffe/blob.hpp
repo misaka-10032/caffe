@@ -284,13 +284,19 @@ class Blob {
   /*
    * Split at first dimension
    */
-  static void Split1(shared_ptr<Blob>& blob, int piece,
+  static void Split1(Blob* blob, int piece,
                      vector<shared_ptr<Blob<Dtype> > >& blobs);
   /*
    * Merge at first dimension
    */
   static void Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
                      Blob<Dtype>* blob);
+
+  /*
+   * Accumulate diff from slaves
+   */
+  static void AccumulateDiff(Blob<Dtype>* blobAcc,
+                             Blob<Dtype>* blobDlt);
 
  protected:
   shared_ptr<SyncedMemory> data_;

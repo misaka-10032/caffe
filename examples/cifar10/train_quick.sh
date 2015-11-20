@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-TOOLS=./build/tools
+TOOLS=./build-release/tools
 
 $TOOLS/caffe train \
   --solver=examples/cifar10/cifar10_quick_solver.prototxt

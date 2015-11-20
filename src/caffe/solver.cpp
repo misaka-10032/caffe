@@ -204,7 +204,6 @@ void Solver<Dtype>::Step(int iters) {
     if (param_.test_interval() && iter_ % param_.test_interval() == 0
         && (iter_ > 0 || param_.test_initialization())
         && Caffe::root_solver()) {
-      // TODO: uncomment this
       TestAll();
       if (requested_early_exit_) {
         // Break out of the while loop because stop was requested while testing.
@@ -237,61 +236,65 @@ void Solver<Dtype>::Step(int iters) {
     }
 
     Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
-    if (scheduler->getRank() == 0) {    /* master */
-      // rocky: only master does such bunch of things
 
-      if (display) {
-        LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
-                                           << ", loss = " << smoothed_loss;
-        const vector<Blob<Dtype> *> &result = net_->output_blobs();
-        int score_index = 0;
-        for (int j = 0; j < result.size(); ++j) {
-          const Dtype *result_vec = result[j]->cpu_data();
-          const string &output_name =
-              net_->blob_names()[net_->output_blob_indices()[j]];
-          const Dtype loss_weight =
-              net_->blob_loss_weights()[net_->output_blob_indices()[j]];
-          for (int k = 0; k < result[j]->count(); ++k) {
-            ostringstream loss_msg_stream;
-            if (loss_weight) {
-              loss_msg_stream << " (* " << loss_weight
-              << " = " << loss_weight * result_vec[k] << " loss)";
-            }
-            LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
-                                               << score_index++ << ": " <<
-                                               output_name << " = "
-                                               << result_vec[k] <<
-                                               loss_msg_stream.str();
+    // rocky: only master displays loss
+    if (display && scheduler->getRank() == 0) {
+      LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
+                                         << ", loss = " << smoothed_loss;
+      const vector<Blob<Dtype> *> &result = net_->output_blobs();
+      int score_index = 0;
+      for (int j = 0; j < result.size(); ++j) {
+        const Dtype *result_vec = result[j]->cpu_data();
+        const string &output_name =
+            net_->blob_names()[net_->output_blob_indices()[j]];
+        const Dtype loss_weight =
+            net_->blob_loss_weights()[net_->output_blob_indices()[j]];
+        for (int k = 0; k < result[j]->count(); ++k) {
+          ostringstream loss_msg_stream;
+          if (loss_weight) {
+            loss_msg_stream << " (* " << loss_weight
+            << " = " << loss_weight * result_vec[k] << " loss)";
           }
+          LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
+                                             << score_index++ << ": " <<
+                                             output_name << " = "
+                                             << result_vec[k] <<
+                                             loss_msg_stream.str();
         }
       }
-      for (int i = 0; i < callbacks_.size(); ++i) {
-        callbacks_[i]->on_gradients_ready();
-      }
-      ApplyUpdate();
+    }
 
-      // Increment the internal iter_ counter -- its value should always indicate
-      // the number of times the weights have been updated.
-      ++iter_;
+    for (int i = 0; i < callbacks_.size(); ++i) {
+      callbacks_[i]->on_gradients_ready();
+    }
+    ApplyUpdate();
 
-      SolverAction::Enum request = GetRequestedAction();
+    // Increment the internal iter_ counter -- its value should always indicate
+    // the number of times the weights have been updated.
+    ++iter_;
 
-      // Save a snapshot if needed.
-      if ((param_.snapshot()
-           && iter_ % param_.snapshot() == 0
-           && Caffe::root_solver()) ||
-          (request == SolverAction::SNAPSHOT)) {
+    SolverAction::Enum request = GetRequestedAction();
+
+    if (SolverAction::STOP == request) {
+      requested_early_exit_ = true;
+      // Break out of training loop.
+      break;
+    }
+
+    // Save a snapshot if needed.
+    if ((param_.snapshot()
+         && iter_ % param_.snapshot() == 0
+         && Caffe::root_solver()) ||
+        (request == SolverAction::SNAPSHOT)) {
+
+
+      if (scheduler->getRank() == 0) {  /* master */
+        // TODO: recv params from slaves
         Snapshot();
+      } else {                          /* slave */
+        // TODO: send params to master
       }
 
-    } else {          /* slave */
-      // rocky: slave may also need to exit when needed
-      SolverAction::Enum request = GetRequestedAction();
-      if (SolverAction::STOP == request) {
-        requested_early_exit_ = true;
-        // Break out of training loop.
-        break;
-      }
     }
 
   }
@@ -362,6 +365,8 @@ void Solver<Dtype>::Test(const int test_net_id) {
   vector<Blob<Dtype>*> bottom_vec;
   const shared_ptr<Net<Dtype> >& test_net = test_nets_[test_net_id];
   Dtype loss = 0;
+  Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
+
   for (int i = 0; i < param_.test_iter(test_net_id); ++i) {
     SolverAction::Enum request = GetRequestedAction();
     // Check to see if stoppage of testing/training has been requested.
@@ -381,27 +386,35 @@ void Solver<Dtype>::Test(const int test_net_id) {
     Dtype iter_loss;
     const vector<Blob<Dtype>*>& result =
         test_net->Forward(bottom_vec, &iter_loss);
-    if (param_.test_compute_loss()) {
-      loss += iter_loss;
-    }
-    if (i == 0) {
-      for (int j = 0; j < result.size(); ++j) {
-        const Dtype* result_vec = result[j]->cpu_data();
-        for (int k = 0; k < result[j]->count(); ++k) {
-          test_score.push_back(result_vec[k]);
-          test_score_output_id.push_back(j);
-        }
+
+    // rocky: only master compute the loss
+    if (scheduler->getRank() == 0) {  /* Master */
+      if (param_.test_compute_loss()) {
+        loss += iter_loss;
       }
-    } else {
-      int idx = 0;
-      for (int j = 0; j < result.size(); ++j) {
-        const Dtype* result_vec = result[j]->cpu_data();
-        for (int k = 0; k < result[j]->count(); ++k) {
-          test_score[idx++] += result_vec[k];
+      if (i == 0) {
+        for (int j = 0; j < result.size(); ++j) {
+          const Dtype *result_vec = result[j]->cpu_data();
+          for (int k = 0; k < result[j]->count(); ++k) {
+            test_score.push_back(result_vec[k]);
+            test_score_output_id.push_back(j);
+          }
+        }
+      } else {
+        int idx = 0;
+        for (int j = 0; j < result.size(); ++j) {
+          const Dtype *result_vec = result[j]->cpu_data();
+          for (int k = 0; k < result[j]->count(); ++k) {
+            test_score[idx++] += result_vec[k];
+          }
         }
       }
     }
   }
+
+  // rocky: broadcast loss from master
+  scheduler->BroadcastLoss(loss, 0);
+
   if (requested_early_exit_) {
     LOG(INFO)     << "Test interrupted.";
     return;
@@ -424,6 +437,7 @@ void Solver<Dtype>::Test(const int test_net_id) {
     LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
               << mean_score << loss_msg_stream.str();
   }
+
 }
 
 template <typename Dtype>

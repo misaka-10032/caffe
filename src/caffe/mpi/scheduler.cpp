@@ -47,6 +47,8 @@ namespace caffe {
     return instance_.get();
   }
 
+
+
   template <typename Dtype>
   void Scheduler<Dtype>::SetUpLayer(Net<Dtype>* net_, int layer_id) {
     shared_ptr<Layer<Dtype> >& layer = net_->layers_[layer_id];
@@ -157,9 +159,9 @@ namespace caffe {
     bool debug_info_ = net_->debug_info_;
     vector<shared_ptr<Layer<Dtype> > >& layers_ = net_->layers_;
     vector<Blob<Dtype>*>& net_input_blobs_ = net_->net_input_blobs_;
-    vector<vector<Blob<Dtype>*> > bottom_vecs_ = net_->bottom_vecs_;
-    vector<vector<Blob<Dtype>*> > top_vecs_ = net_->top_vecs_;
-    vector<vector<Blob<Dtype>*> > sliced_top_vecs_ = net_->sliced_top_vecs_;
+    vector<vector<Blob<Dtype>*> >& bottom_vecs_ = net_->bottom_vecs_;
+    vector<vector<Blob<Dtype>*> >& top_vecs_ = net_->top_vecs_;
+    vector<vector<Blob<Dtype>*> >& sliced_top_vecs_ = net_->sliced_top_vecs_;
     vector<string>& layer_names_ = net_->layer_names_;
 
     CHECK_GE(start, 0);
@@ -179,7 +181,7 @@ namespace caffe {
       vector<Blob<Dtype>*>& top_vecs = top_vecs_[i];
       vector<Blob<Dtype>*>& sliced_top_vecs = sliced_top_vecs_[i];
       vector<Blob<Dtype>*>& bottom_vecs = bottom_vecs_[i];
-      shared_ptr<Layer<Dtype> > layer = layers_[i];
+      shared_ptr<Layer<Dtype> >& layer = layers_[i];
       MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
       MpiLayer<Dtype>* __as_sync__ = dynamic_cast<MpiSyncLayer<Dtype>*>(layer.get());
 
@@ -234,6 +236,11 @@ namespace caffe {
   }
 
   template <typename Dtype>
+  void Scheduler<Dtype>::BroadcastLoss(Dtype& loss, int root) {
+    broadcast(*world, loss, root);
+  }
+
+  template <typename Dtype>
   void Scheduler<Dtype>::BroadcastBlobs(vector<Blob<Dtype>*>& blobs, int root) {
     int blob_cnt = blobs.size();
     for (int i = 0; i < blob_cnt; i++) {
@@ -280,19 +287,82 @@ namespace caffe {
   void Scheduler<Dtype>::BackwardFromTo(Net<Dtype>* net_, int start, int end) {
     bool debug_info_ = net_->debug_info_;
     vector<shared_ptr<Layer<Dtype> > >& layers_ = net_->layers_;
-    vector<vector<Blob<Dtype>*> > bottom_vecs_ = net_->bottom_vecs_;
-    vector<vector<Blob<Dtype>*> > top_vecs_ = net_->top_vecs_;
+    vector<vector<Blob<Dtype>*> >& bottom_vecs_ = net_->bottom_vecs_;
+    vector<vector<Blob<Dtype>*> >& top_vecs_ = net_->top_vecs_;
+    vector<vector<Blob<Dtype>*> >& sliced_top_vecs_ = net_->sliced_top_vecs_;
     vector<bool>& layer_need_backward_ = net_->layer_need_backward_;
     vector<vector<bool> >& bottom_need_backward_ = net_->bottom_need_backward_;
 
     CHECK_GE(end, 0);
     CHECK_LT(start, layers_.size());
-    for (int i = start; i >= end; --i) {
-      if (layer_need_backward_[i]) {
-        layers_[i]->Backward(
-            top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
-        if (debug_info_) { BackwardDebugInfo(net_, i); }
+
+    int size = world->size();
+    int rank = world->rank();
+    int slave_cnt = size - 1;
+    for (int i = start; i <= end; ++i) {
+      if (!layer_need_backward_[i]) {
+        continue;
       }
+
+      vector<Blob<Dtype>*>& top_vecs = top_vecs_[i];
+      vector<Blob<Dtype>*>& sliced_top_vecs = sliced_top_vecs_[i];
+      vector<Blob<Dtype>*>& bottom_vecs = bottom_vecs_[i];
+      shared_ptr<Layer<Dtype> >& layer = layers_[i];
+      vector<bool>& bottom_need_backward = bottom_need_backward_[i];  // TODO: ref?
+      MpiLayer<Dtype>* __as_mpi__ = dynamic_cast<MpiLayer<Dtype>*>(layer.get());
+      MpiLayer<Dtype>* __as_sync__ = dynamic_cast<MpiSyncLayer<Dtype>*>(layer.get());
+
+      if (rank == 0) {                  /* is master */
+        if (!__as_mpi__){               /* is NOT MpiLayer */
+          layer->Backward(top_vecs, bottom_need_backward, bottom_vecs);
+        } else {                        /* is MpiLayer */
+          if (!__as_sync__) {           /* ignore MpiSyncLayer */
+            /* 1. send sliced tops */
+            int top_cnt = top_vecs.size();
+            for (int top_id = 0; top_id < top_cnt; top_id++) {
+              vector<shared_ptr<Blob<Dtype> > > blobs;
+              Blob<Dtype>::Split1(top_vecs[top_id], slave_cnt, blobs);
+              for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
+                SendBlob(slave_id, top_id, *blobs[slave_id - 1]);
+              }
+            }
+            /* 2. recv and combine bottoms from slaves */
+            int bottom_cnt = bottom_vecs.size();
+            for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
+              shared_ptr<Blob<Dtype> > blob(
+                  new Blob<Dtype>(bottom_vecs[bottom_id]->shape()));
+              for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
+                // TODO: add while receiving
+                RecvBlob(slave_id, bottom_id, *blob);
+                Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
+              }
+            }
+          }
+        }
+
+        // only master prints debug_info
+        if (debug_info_) { BackwardDebugInfo(net_, i); }
+
+      } else {                          /* is slave */
+        if (__as_mpi__) {               /* is MpiLayer */
+          if (!__as_sync__) {           /* ignore MpiSyncLayer */
+            /* 1. recv tops from master */
+            int top_cnt = sliced_top_vecs.size();
+            for (int top_id = 0; top_id < top_cnt; top_id++) {
+              RecvBlob(0, top_id, *sliced_top_vecs[top_id]);
+            }
+            /* 2. back propagate */
+            layer->Backward(sliced_top_vecs, bottom_need_backward, bottom_vecs);
+            /* 3. send bottoms */
+            int bottom_cnt = bottom_vecs.size();
+            for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
+              SendBlob(0, bottom_id, *bottom_vecs[bottom_id]);
+            }
+          }
+        }
+      }
+
+      if (debug_info_) { ForwardDebugInfo(net_, i); }
     }
   }
 

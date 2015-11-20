@@ -544,7 +544,7 @@ int Blob<Dtype>::GetBlockOffset(int axis) {
 }
 
 template <typename Dtype>
-void Blob<Dtype>::Split1(shared_ptr<Blob<Dtype> >& blob, int piece,
+void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
                          vector<shared_ptr<Blob<Dtype> > >& blobs) {
   // TODO: assert piece > 1
   // TODO: assert blob have valid shape
@@ -633,6 +633,29 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
       // TODO: GPU data
     }
   }
+}
+
+template <typename Dtype>
+void Blob<Dtype>::AccumulateDiff(Blob<Dtype>* blobAcc,
+                                 Blob<Dtype>* blobDlt) {
+  // TODO: to be tested
+
+  vector<int> shapeAcc = blobAcc->shape();
+  vector<int> shapeDlt = blobDlt->shape();
+  int shapeSize = shapeAcc.size();
+  CHECK_EQ(shapeSize, shapeDlt.size());
+  int capacity = 1;
+
+  for (int i = 0; i < shapeSize; i++) {
+    CHECK_EQ(shapeAcc[i], shapeDlt[i]);
+    capacity *= shapeAcc[i];
+  }
+
+  caffe_add<Dtype>(capacity,
+                   blobAcc->cpu_diff(),
+                   blobDlt->cpu_diff(),
+                   blobAcc->mutable_cpu_diff()
+                   );
 }
 
 INSTANTIATE_CLASS(Blob);
