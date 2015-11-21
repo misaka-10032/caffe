@@ -58,29 +58,6 @@ namespace caffe {
     Blob<Dtype> bias_multiplier_;
   };
 
-  /* MpiDistrLayer */
-  template<typename Dtype>
-  class MpiDistrLayer : public MpiLayer<Dtype> {
-  public:
-    MpiDistrLayer(const LayerParameter &param)
-        : MpiLayer<Dtype>(param) { }
-
-    virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-                            const vector<Blob<Dtype>*>& top);
-    virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
-                         const vector<Blob<Dtype>*>& top);
-
-    virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-                             const vector<Blob<Dtype>*>& top);
-//    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-//    const vector<Blob<Dtype>*>& top);
-    virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
-                              const vector<bool>& propagate_down,
-                              const vector<Blob<Dtype>*>& bottom);
-//    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-//    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
-  };
-
   /* MpiSyncLayer */
   template<typename Dtype>
   class MpiSyncLayer : public MpiLayer<Dtype> {

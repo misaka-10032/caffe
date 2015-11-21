@@ -201,7 +201,6 @@ namespace caffe {
                 blobs[slave_id - 1].reset(new Blob<Dtype>());
                 RecvBlob(slave_id, top_id, *blobs[slave_id - 1]);
               }
-              int local_loss;
               Blob<Dtype>::Merge1(blobs, top_vecs[top_id]);
             }
             /* 3. receive & accumulate loss */
@@ -299,7 +298,7 @@ namespace caffe {
     int size = world->size();
     int rank = world->rank();
     int slave_cnt = size - 1;
-    for (int i = start; i <= end; ++i) {
+    for (int i = start; i >= end; --i) {
       if (!layer_need_backward_[i]) {
         continue;
       }
@@ -329,12 +328,16 @@ namespace caffe {
             /* 2. recv and combine bottoms from slaves */
             int bottom_cnt = bottom_vecs.size();
             for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
-              shared_ptr<Blob<Dtype> > blob(
-                  new Blob<Dtype>(bottom_vecs[bottom_id]->shape()));
+              shared_ptr<Blob<Dtype> > blob(new Blob<Dtype>());
               for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
                 // TODO: add while receiving
-                RecvBlob(slave_id, bottom_id, *blob);
-                Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
+                if (slave_id == 1) {
+                  /* !! need to reset diff in every pass !! */
+                  RecvBlob(slave_id, bottom_id, *bottom_vecs[bottom_id]);
+                } else {
+                  RecvBlob(slave_id, bottom_id, *blob);
+                  Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
+                }
               }
             }
           }

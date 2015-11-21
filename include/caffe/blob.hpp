@@ -282,12 +282,22 @@ class Blob {
 
   int GetBlockOffset(int axis);
   /*
-   * Split at first dimension
+   * Split at axis0
+   */
+  static void Split0(Blob* blob, int piece,
+                     vector<shared_ptr<Blob<Dtype> > >& blobs);
+  /*
+   * Split at axis1
    */
   static void Split1(Blob* blob, int piece,
                      vector<shared_ptr<Blob<Dtype> > >& blobs);
   /*
-   * Merge at first dimension
+   * Merge at axis0
+   */
+  static void Merge0(vector<shared_ptr<Blob<Dtype> > >& blobs,
+                     Blob<Dtype>* blob);
+  /*
+   * Merge at axis1
    */
   static void Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
                      Blob<Dtype>* blob);

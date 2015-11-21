@@ -75,17 +75,6 @@ class SolverRegistry {
     CreatorRegistry& registry = Registry();
     CHECK_EQ(registry.count(type), 1) << "Unknown solver type: " << type
         << " (known types: " << SolverTypeListString() << ")";
-
-    LOG(INFO) << "**********";
-    LOG(INFO) << "iterate registry";
-    for (auto const it : registry) {
-      LOG(INFO) << "**********";
-      LOG(INFO) << it.first;
-      LOG(INFO) << it.second;
-      LOG(INFO) << "**********";
-    }
-    LOG(INFO) << "**********";
-
     return registry[type](param);
   }
 

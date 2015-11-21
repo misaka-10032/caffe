@@ -544,10 +544,66 @@ int Blob<Dtype>::GetBlockOffset(int axis) {
 }
 
 template <typename Dtype>
-void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
+void Blob<Dtype>::Split0(Blob<Dtype>* blob, int piece,
                          vector<shared_ptr<Blob<Dtype> > >& blobs) {
   // TODO: assert piece > 1
-  // TODO: assert blob have valid shape
+
+  const int axis = 0;
+  vector<int> shape = blob->shape();
+  int shapeSize = shape.size();
+  vector<int> dividedShape = shape;
+  dividedShape[axis] /= piece;
+  vector<int> lastShape = dividedShape;
+  lastShape[axis] += shape[axis] % piece;
+
+  blobs.resize(piece);
+  for (int i = 0; i < piece - 1; i++) {
+    blobs[i].reset(new Blob<Dtype>(dividedShape));
+  }
+  blobs[piece-1].reset(new Blob<Dtype>(lastShape));
+
+  int dimInAxis = 0;
+  for (int i = 0; i < piece; i++) {
+    CHECK_EQ(blobs[i]->shape().size(), shapeSize);
+    for (int j = 0; j < shapeSize; j++) {
+      if (j == axis) {
+        dimInAxis += blobs[i]->shape()[j];
+      } else {
+        CHECK_EQ(blobs[i]->shape()[j], blob->shape()[j]);
+      }
+    }
+  }
+  CHECK_EQ(blob->shape()[axis], dimInAxis);
+
+  int dividedOffset = blobs[0]->GetBlockOffset(axis);
+  int lastOffset = blobs[piece - 1]->GetBlockOffset(axis);
+  int wholeOffset = blob->GetBlockOffset(axis);
+
+  int blockSize = sizeof(Dtype) * dividedOffset;
+  const void* src;
+  void* dst;
+  for (int i = 0; i < piece - 1; i++) {
+    dst = blobs[i]->mutable_cpu_data();
+    src = blob->cpu_data() + i * dividedOffset;
+    memcpy(dst, src, blockSize);
+    dst = blobs[i]->mutable_cpu_diff();
+    src = blob->cpu_diff() + i * dividedOffset;
+    memcpy(dst, src, blockSize);
+  }
+
+  blockSize = sizeof(Dtype) * lastOffset;
+  dst = blobs[piece - 1]->mutable_cpu_data();
+  src = blob->cpu_data() + wholeOffset - lastOffset;
+  memcpy(dst, src, blockSize);
+  dst = blobs[piece - 1]->mutable_cpu_diff();
+  src = blob->cpu_diff() + wholeOffset - lastOffset;
+  memcpy(dst, src, blockSize);
+}
+
+template <typename Dtype>
+void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
+                         vector<shared_ptr<Blob<Dtype> > >& blobs) {
+  CHECK(piece > 1);
 
   const int axis = 1;
   vector<int> shape = blob->shape();
@@ -562,10 +618,25 @@ void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
   }
   blobs[piece-1].reset(new Blob<Dtype>(lastShape));
 
+  int dimInAxis = 0;
+  int shapeSize = shape.size();
+  for (int i = 0; i < piece; i++) {
+    CHECK_EQ(blobs[i]->shape().size(), shapeSize);
+    for (int j = 0; j < shapeSize; j++) {
+      if (j == axis) {
+        dimInAxis += blobs[i]->shape()[j];
+      } else {
+        CHECK_EQ(blobs[i]->shape()[j], shape[j]);
+      }
+    }
+  }
+  CHECK_EQ(shape[axis], dimInAxis);
+
   int dim0 = shape[0];
   int dividedOffset = blobs[0]->GetBlockOffset(axis);
   int lastOffset = blobs[piece - 1]->GetBlockOffset(axis);
   int offset = blob->GetBlockOffset(axis);
+
   const void *src;
   void *dst;
   for (int j = 0; j < dim0; j++) {
@@ -589,22 +660,68 @@ void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
 }
 
 template <typename Dtype>
+void Blob<Dtype>::Merge0(vector<shared_ptr<Blob<Dtype> > >& blobs,
+                         Blob<Dtype>* blob) {
+  const int axis = 0;
+  int piece = blobs.size();
+  CHECK(piece > 1);
+
+  int dimInAxis = 0;
+  vector<int> shape = blob->shape();
+  int shapeSize = shape.size();
+  for (int i = 0; i < piece; i++) {
+    CHECK_EQ(blobs[i]->shape().size(), shapeSize);
+    for (int j = 0; j < shapeSize; j++) {
+      if (j == axis) {
+        dimInAxis += blobs[i]->shape()[j];
+      } else {
+        CHECK_EQ(blobs[i]->shape()[j], shape[j]);
+      }
+    }
+  }
+  CHECK_EQ(shape[axis], dimInAxis);
+
+  const void* src;
+  void* dst;
+  int offset = 0;
+  for (int i = 0; i < piece; i++) {
+    int localOffset = blobs[i]->GetBlockOffset(axis);
+    int blockSize = sizeof(Dtype) * localOffset;
+    src = blobs[i]->cpu_data();
+    dst = blob->mutable_cpu_data() + offset;
+    memcpy(dst, src, blockSize);
+    src = blobs[i]->cpu_diff();
+    dst = blob->mutable_cpu_diff() + offset;
+    memcpy(dst, src, blockSize);
+    offset += localOffset;
+  }
+}
+
+template <typename Dtype>
 void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
                          Blob<Dtype>* blob) {
-  // TODO: assert piece > 1
-  // TODO: assert blob have valid shape
-
   const int axis = 1;
   int piece = blobs.size();
-  vector<int> dividedShape = blobs[0]->shape();
-  vector<int> shape = dividedShape;
-  shape[1] *= piece - 1;
-  shape[1] += blobs[piece-1]->shape()[1];
+  vector<int> shape = blob->shape();
 
-  int size = shape.size();
-  for (int i = 0; i < size; i++) {
-    CHECK_EQ(shape[i], blob->shape()[i]);
+  CHECK(piece > 1);
+
+  int dimInAxis = 0;
+  int shapeSize = shape.size();
+  for (int i = 0; i < piece; i++) {
+    CHECK_EQ(blobs[i]->shape().size(), shapeSize);
+    for (int j = 0; j < shapeSize; j++) {
+      if (j == axis) {
+        dimInAxis += blobs[i]->shape()[j];
+        if (i != 0 && i != piece-1) {
+          CHECK_EQ(blobs[i]->shape()[j], blobs[i-1]->shape()[j]);
+        }
+      } else {
+        CHECK_EQ(blobs[i]->shape()[j], shape[j]);
+      }
+    }
   }
+  CHECK_EQ(shape[axis], dimInAxis);
 
   int dim0 = shape[0];
   int dividedOffset = blobs[0]->GetBlockOffset(axis);
@@ -612,8 +729,8 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
   int offset = blob->GetBlockOffset(axis);
   const void *src;
   void *dst;
-    for (int i = 0; i < piece - 1; i++) {
-      for (int j = 0; j < dim0; j++) {
+  for (int i = 0; i < piece - 1; i++) {
+    for (int j = 0; j < dim0; j++) {
       src = blobs[i]->cpu_data() + j * dividedOffset;
       dst = blob->mutable_cpu_data() + j * offset + i * dividedOffset;
       memcpy(dst, src, sizeof(Dtype) * dividedOffset);
@@ -622,16 +739,15 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
       memcpy(dst, src, sizeof(Dtype) * dividedOffset);
       // TODO: GPU data
     }
-    for (int j = 0; j < dim0; j++)
-    {
-      src = blobs[piece - 1]->cpu_data() + j * lastOffset;
-      dst = blob->mutable_cpu_data() + (j + 1) * offset - lastOffset;
-      memcpy(dst, src,sizeof(Dtype) * lastOffset);
-      src = blobs[piece - 1]->cpu_diff() + j * lastOffset;
-      dst = blob->mutable_cpu_diff() + (j + 1) * offset - lastOffset;
-      memcpy(dst, src, sizeof(Dtype) * lastOffset);
-      // TODO: GPU data
-    }
+  }
+  for (int j = 0; j < dim0; j++) {
+    src = blobs[piece - 1]->cpu_data() + j * lastOffset;
+    dst = blob->mutable_cpu_data() + (j + 1) * offset - lastOffset;
+    memcpy(dst, src,sizeof(Dtype) * lastOffset);
+    src = blobs[piece - 1]->cpu_diff() + j * lastOffset;
+    dst = blob->mutable_cpu_diff() + (j + 1) * offset - lastOffset;
+    memcpy(dst, src, sizeof(Dtype) * lastOffset);
+    // TODO: GPU data
   }
 }
 

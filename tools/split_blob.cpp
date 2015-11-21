@@ -21,34 +21,44 @@ int main(int argc, char** argv) {
   vector<int> shape;
   shape.resize(2);
   shape[0] = 2;
-  shape[1] = 5;
+  shape[1] = 10;
 
   Blob<float>* blob = new Blob<float>(shape);
   for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 5; j++) {
-      int idx = i * 5 + j;
-      *(blob->mutable_cpu_data() + idx) = (float) idx;
-      cout << *(blob->cpu_data() + idx) << " ";
+    for (int j = 0; j < 10; j++) {
+      int idx = i * 10 + j;
+      *(blob->mutable_cpu_diff() + idx) = (float) idx;
+      cout << *(blob->cpu_diff() + idx) << " ";
     }
     cout << endl;
   }
   cout << endl << endl;
 
   vector<shared_ptr<Blob<float> > > blobs;
-  Blob<float>::Split1(blob, 2, blobs);
+  Blob<float>::Split1(blob, 3, blobs);
 
   for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
-      int idx = i * 2 + j;
-      cout << *(blobs[0]->cpu_data() + idx) << " ";
+    for (int j = 0; j < 3; j++) {
+      int idx = i * 3 + j;
+      cout << *(blobs[0]->cpu_diff() + idx) << " ";
     }
     cout << endl;
   }
   cout << endl;
+
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 3; j++) {
       int idx = i * 3 + j;
-      cout << *(blobs[1]->cpu_data() + idx) << " ";
+      cout << *(blobs[1]->cpu_diff() + idx) << " ";
+    }
+    cout << endl;
+  }
+  cout << endl;
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 4; j++) {
+      int idx = i * 4 + j;
+      cout << *(blobs[2]->cpu_diff() + idx) << " ";
     }
     cout << endl;
   }

@@ -294,6 +294,11 @@ class Net {
    * and learnable_params_[learnable_param_ids_[i]] gives its owner.
    */
   vector<int> learnable_param_ids_;
+
+  // rocky
+  vector<int> learnable_param_layer_ids_;
+
+
   /// the learning rate multipliers for learnable_params_
   vector<float> params_lr_;
   vector<bool> has_params_lr_;

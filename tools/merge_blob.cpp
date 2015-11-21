@@ -14,32 +14,60 @@ using caffe::shared_ptr;
 
 int main(int argc, char **argv) {
   vector<int> shape;
-  int pieces = 2;
+  int pieces = 3;
   shape.resize(2);
   shape[0] = 2;
-  shape[1] = 5;
+  shape[1] = 3;
+
+  vector<int> lastShape;
+  lastShape.resize(2);
+  lastShape[0] = 2;
+  lastShape[1] = 4;
 
   vector<shared_ptr<Blob<float> > > blobs(pieces);
-  for (int i = 0; i < pieces; i++) {
-    blobs[i].reset(new Blob<float>(shape));
-  }
-  for (int k = 0; k < pieces; k++)
-    for (int i = 0; i < 2; i++) {
-      for (int j = 0; j < 5; j++) {
-        int idx = i * 5 + j;
-        *(blobs[k]->mutable_cpu_data() + idx) = (float) (k * 2 * 5 + idx);
-        cout << *(blobs[k]->cpu_data() + idx) << " ";
-      }
-      cout << endl;
-    }
-  cout << endl << endl;
+  blobs[0].reset(new Blob<float>(shape));
+  blobs[1].reset(new Blob<float>(shape));
+  blobs[2].reset(new Blob<float>(lastShape));
 
-  vector<int> shapeMerge = blobs[0]->shape();
-  shapeMerge[1] *= pieces - 1;
-  shapeMerge[1] += blobs[pieces-1]->shape()[1];
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      int idx = i * 3 + j;
+      *(blobs[0]->mutable_cpu_data() + idx) = (float) (idx);
+      cout << *(blobs[0]->cpu_data() + idx) << " ";
+    }
+    cout << endl;
+  }
+  cout << endl;
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 3; j++) {
+      int idx = i * 3 + j;
+      *(blobs[1]->mutable_cpu_data() + idx) = (float) (idx);
+      cout << *(blobs[1]->cpu_data() + idx) << " ";
+    }
+    cout << endl;
+  }
+  cout << endl;
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 4; j++) {
+      int idx = i * 4 + j;
+      *(blobs[2]->mutable_cpu_data() + idx) = (float) (idx);
+      cout << *(blobs[2]->cpu_data() + idx) << " ";
+    }
+    cout << endl;
+  }
+  cout << endl;
+
+  cout << endl;
+
+  vector<int> shapeMerge(2);
+  shapeMerge[0] = 2;
+  shapeMerge[1] = 10;
 
   shared_ptr<Blob<float> > blob(new Blob<float>(shapeMerge));
   Blob<float>::Merge1(blobs, blob.get());
+
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 10; j++) {
       int idx = i * 10 + j;
@@ -47,10 +75,6 @@ int main(int argc, char **argv) {
     }
     cout << endl;
   }
-
-//  shared_ptr<BlobProto> blobProto(new BlobProto());
-//  blob->ToProto(blobProto.get(), true);
-//  cout << blobProto->SerializeAsString();
 
   return 0;
 }

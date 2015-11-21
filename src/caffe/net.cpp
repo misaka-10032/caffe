@@ -209,63 +209,68 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
   }
+
+  // TODO(rocky): check if really need this logic
+  // TODO: add back if necessary
   // Go through the net backwards to determine which blobs contribute to the
   // loss.  We can skip backward computation for blobs that don't contribute
   // to the loss.
   // Also checks if all bottom blobs don't need backward computation (possible
   // because the skip_propagate_down param) and so we can skip bacward
   // computation for the entire layer
-  set<string> blobs_under_loss;
-  set<string> blobs_skip_backp;
-  for (int layer_id = layers_.size() - 1; layer_id >= 0; --layer_id) {
-    bool layer_contributes_loss = false;
-    bool layer_skip_propagate_down = true;
-    for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
-      const string& blob_name = blob_names_[top_id_vecs_[layer_id][top_id]];
-      if (layers_[layer_id]->loss(top_id) ||
-          (blobs_under_loss.find(blob_name) != blobs_under_loss.end())) {
-        layer_contributes_loss = true;
-      }
-      if (blobs_skip_backp.find(blob_name) == blobs_skip_backp.end()) {
-        layer_skip_propagate_down = false;
-      }
-      if (layer_contributes_loss && !layer_skip_propagate_down)
-        break;
-    }
-    // If this layer can skip backward computation, also all his bottom blobs
-    // don't need backpropagation
-    if (layer_need_backward_[layer_id] && layer_skip_propagate_down) {
-      layer_need_backward_[layer_id] = false;
-      for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
-               ++bottom_id) {
-        bottom_need_backward_[layer_id][bottom_id] = false;
-      }
-    }
-    if (!layer_contributes_loss) { layer_need_backward_[layer_id] = false; }
-    if (Caffe::root_solver()) {
-      if (layer_need_backward_[layer_id]) {
-        LOG(INFO) << layer_names_[layer_id] << " needs backward computation.";
-      } else {
-        LOG(INFO) << layer_names_[layer_id]
-            << " does not need backward computation.";
-      }
-    }
-    for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
-         ++bottom_id) {
-      if (layer_contributes_loss) {
-        const string& blob_name =
-            blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
-        blobs_under_loss.insert(blob_name);
-      } else {
-        bottom_need_backward_[layer_id][bottom_id] = false;
-      }
-      if (!bottom_need_backward_[layer_id][bottom_id]) {
-        const string& blob_name =
-                   blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
-        blobs_skip_backp.insert(blob_name);
-      }
-    }
-  }
+//  set<string> blobs_under_loss;
+//  set<string> blobs_skip_backp;
+//  for (int layer_id = layers_.size() - 1; layer_id >= 0; --layer_id) {
+//    bool layer_contributes_loss = false;
+//    bool layer_skip_propagate_down = true;
+//    for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
+//      const string& blob_name = blob_names_[top_id_vecs_[layer_id][top_id]];
+//      if (layers_[layer_id]->loss(top_id) ||
+//          (blobs_under_loss.find(blob_name) != blobs_under_loss.end())) {
+//        layer_contributes_loss = true;
+//      }
+//      if (blobs_skip_backp.find(blob_name) == blobs_skip_backp.end()) {
+//        layer_skip_propagate_down = false;
+//      }
+//      if (layer_contributes_loss && !layer_skip_propagate_down)
+//        break;
+//    }
+//    // If this layer can skip backward computation, also all his bottom blobs
+//    // don't need backpropagation
+//    if (layer_need_backward_[layer_id] && layer_skip_propagate_down) {
+//      layer_need_backward_[layer_id] = false;
+//      for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
+//               ++bottom_id) {
+//        bottom_need_backward_[layer_id][bottom_id] = false;
+//      }
+//    }
+//    if (!layer_contributes_loss) { layer_need_backward_[layer_id] = false; }
+//    if (Caffe::root_solver()) {
+//      if (layer_need_backward_[layer_id]) {
+//        LOG(INFO) << layer_names_[layer_id] << " needs backward computation.";
+//      } else {
+//        LOG(INFO) << layer_names_[layer_id]
+//            << " does not need backward computation.";
+//      }
+//    }
+//    for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
+//         ++bottom_id) {
+//      if (layer_contributes_loss) {
+//        const string& blob_name =
+//            blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
+//        blobs_under_loss.insert(blob_name);
+//      } else {
+//        bottom_need_backward_[layer_id][bottom_id] = false;
+//      }
+//      if (!bottom_need_backward_[layer_id][bottom_id]) {
+//        const string& blob_name =
+//                   blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
+//        blobs_skip_backp.insert(blob_name);
+//      }
+//    }
+//  }
+
+
   // Handle force_backward if needed.
   if (param.force_backward()) {
     for (int layer_id = 0; layer_id < layers_.size(); ++layer_id) {
@@ -546,6 +551,7 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
       const int learnable_param_id = learnable_params_.size();
       learnable_params_.push_back(params_[net_param_id].get());
       learnable_param_ids_.push_back(learnable_param_id);
+      learnable_param_layer_ids_.push_back(layer_id);
       has_params_lr_.push_back(param_spec->has_lr_mult());
       has_params_decay_.push_back(param_spec->has_decay_mult());
       params_lr_.push_back(param_spec->lr_mult());
