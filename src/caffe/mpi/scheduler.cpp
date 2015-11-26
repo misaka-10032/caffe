@@ -329,15 +329,11 @@ namespace caffe {
             int bottom_cnt = bottom_vecs.size();
             for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
               shared_ptr<Blob<Dtype> > blob(new Blob<Dtype>());
+              Blob<Dtype>* bottom_vec = bottom_vecs[bottom_id];
+              bottom_vec->ResetDiff();  /* Need reset diff before accum */
               for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
-                // TODO: add while receiving
-                if (slave_id == 1) {
-                  /* !! need to reset diff in every pass !! */
-                  RecvBlob(slave_id, bottom_id, *bottom_vecs[bottom_id]);
-                } else {
-                  RecvBlob(slave_id, bottom_id, *blob);
-                  Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
-                }
+                RecvBlob(slave_id, bottom_id, *blob);
+                Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
               }
             }
           }

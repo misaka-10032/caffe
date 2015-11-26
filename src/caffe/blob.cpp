@@ -752,6 +752,12 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
 }
 
 template <typename Dtype>
+void Blob<Dtype>::ResetDiff() {
+  /* int/float/double has same repr for 0 */
+  memset(mutable_cpu_data(), 0, capacity_ * sizeof(Dtype));
+}
+
+template <typename Dtype>
 void Blob<Dtype>::AccumulateDiff(Blob<Dtype>* blobAcc,
                                  Blob<Dtype>* blobDlt) {
   // TODO: to be tested

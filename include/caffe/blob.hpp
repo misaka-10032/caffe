@@ -302,6 +302,12 @@ class Blob {
   static void Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
                      Blob<Dtype>* blob);
 
+
+  /*
+   * Reset diff before merging back-propagated diff
+   */
+  void ResetDiff();
+
   /*
    * Accumulate diff from slaves
    */
