@@ -603,7 +603,7 @@ void Blob<Dtype>::Split0(Blob<Dtype>* blob, int piece,
 template <typename Dtype>
 void Blob<Dtype>::Split1(Blob<Dtype>* blob, int piece,
                          vector<shared_ptr<Blob<Dtype> > >& blobs) {
-  CHECK(piece > 1);
+  CHECK(piece > 0);
 
   const int axis = 1;
   vector<int> shape = blob->shape();
@@ -704,7 +704,7 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
   int piece = blobs.size();
   vector<int> shape = blob->shape();
 
-  CHECK(piece > 1);
+  CHECK(piece > 0);
 
   int dimInAxis = 0;
   int shapeSize = shape.size();
@@ -754,7 +754,7 @@ void Blob<Dtype>::Merge1(vector<shared_ptr<Blob<Dtype> > >& blobs,
 template <typename Dtype>
 void Blob<Dtype>::ResetDiff() {
   /* int/float/double has same repr for 0 */
-  memset(mutable_cpu_data(), 0, capacity_ * sizeof(Dtype));
+  memset(mutable_cpu_diff(), 0, capacity_ * sizeof(Dtype));
 }
 
 template <typename Dtype>
