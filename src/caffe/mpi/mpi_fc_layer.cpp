@@ -18,7 +18,7 @@ template <typename Dtype>
 void MpiFcLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                                    const vector<Blob<Dtype>*>& top) {
   CHECK_GE(this->slave_cnt_, 1)
-    << "parallelism must >= 1";
+    << "# of slaves must be >= 1";
 
   const int num_output = this->layer_param_.inner_product_param().num_output();
   this->bias_term_ = this->layer_param_.inner_product_param().bias_term();
