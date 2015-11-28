@@ -9,31 +9,33 @@
 #define CAFFE_MPI_LAYERS_H
 
 #include "caffe/layer.hpp"
+#include "caffe/vision_layers.hpp"
 #include "caffe/mpi/scheduler.h"
 
 namespace caffe {
   /* Base class */
   template<typename Dtype>
-  class MpiLayer : public Layer<Dtype> {
+  class MpiOperable {
   public:
-    explicit MpiLayer(const LayerParameter& param)
-        : Layer<Dtype>(param) {
+    explicit MpiOperable() {
       Scheduler<Dtype> *scheduler = Scheduler<Dtype>::Get();
-      parallelism_ = scheduler->getParallelism();
+      slave_cnt_ = scheduler->getSlaveCnt();
       rank_ = scheduler->getRank();
     }
 
   protected:
-    int parallelism_;
+    int slave_cnt_;
     int rank_;
   };
 
   /* MpiFcLayer */
   template<typename Dtype>
-  class MpiFcLayer : public MpiLayer<Dtype> {
+  class MpiFcLayer : public MpiOperable<Dtype>,
+                     public InnerProductLayer<Dtype> {
   public:
-    explicit MpiFcLayer(const LayerParameter &param)
-        : MpiLayer<Dtype>(param) {}
+    explicit MpiFcLayer(const LayerParameter &param) :
+        MpiOperable<Dtype>(),
+        InnerProductLayer<Dtype>(param) {}
     virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                             const vector<Blob<Dtype>*>& top);
     virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -42,43 +44,39 @@ namespace caffe {
   protected:
     virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                              const vector<Blob<Dtype>*>& top);
-//    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-//                             const vector<Blob<Dtype>*>& top);
+    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+                             const vector<Blob<Dtype>*>& top);
     virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
                               const vector<bool>& propagate_down,
                               const vector<Blob<Dtype>*>& bottom);
-//    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-//                              const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
-
-  private:
-    int M_;
-    int K_;
-    int N_;
-    bool bias_term_;
-    Blob<Dtype> bias_multiplier_;
+    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+                              const vector<bool>& propagate_down,
+                              const vector<Blob<Dtype>*>& bottom);
   };
 
   /* MpiSyncLayer */
   template<typename Dtype>
-  class MpiSyncLayer : public MpiLayer<Dtype> {
+  class MpiSyncLayer : public MpiOperable<Dtype>,
+                       public Layer<Dtype> {
   public:
     MpiSyncLayer(const LayerParameter &param)
-        : MpiLayer<Dtype>(param) { }
-
+        : MpiOperable<Dtype>(), Layer<Dtype>(param) {}
     virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
                             const vector<Blob<Dtype>*>& top);
     virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
                          const vector<Blob<Dtype>*>& top);
 
+  protected:
     virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                              const vector<Blob<Dtype>*>& top);
-//    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-//    const vector<Blob<Dtype>*>& top);
+    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+                             const vector<Blob<Dtype>*>& top);
     virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
                               const vector<bool>& propagate_down,
                               const vector<Blob<Dtype>*>& bottom);
-//    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-//    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+                              const vector<bool>& propagate_down,
+                              const vector<Blob<Dtype>*>& bottom);
   };
 
 }

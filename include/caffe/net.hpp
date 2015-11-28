@@ -12,6 +12,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/mpi/scheduler.h"
+#include "caffe/mpi/operators.h"
 
 namespace caffe {
 
@@ -23,10 +24,14 @@ namespace caffe {
  */
 
 template <typename Dtype> class Scheduler;
+template <typename Dtype> class Operator;
+template <typename Dtype> class MpiFcOperator;
 
-template <typename Dtype>
+  template <typename Dtype>
 class Net {
   friend class Scheduler<Dtype>;
+  friend class Operator<Dtype>;
+  friend class MpiFcOperator<Dtype>;
 
  public:
   explicit Net(const NetParameter& param, const Net* root_net = NULL);

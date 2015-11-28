@@ -36,9 +36,9 @@ namespace caffe {
   }
 
 
-//#ifdef CPU_ONLY
-//  STUB_GPU(MpiSyncLayer);
-//#endif
+#ifdef CPU_ONLY
+  STUB_GPU(MpiSyncLayer);
+#endif
 
   INSTANTIATE_CLASS(MpiSyncLayer);
   REGISTER_LAYER_CLASS(MpiSync);

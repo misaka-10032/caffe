@@ -205,8 +205,8 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     // rocky: need_backward logic SUCKS! FXXK!
     // rocky: that pernicious bug costs me two days!
     // rocky: force MPI layers to backward
-    MpiLayer<Dtype>* __as_mpi__ =
-        dynamic_cast<MpiLayer<Dtype>*>(layers_[layer_id].get());
+    MpiOperable<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiOperable<Dtype>*>(layers_[layer_id].get());
     if (__as_mpi__) {
       need_backward = true;
     }
@@ -546,11 +546,10 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
 
     // rocky: master and slaves have different learnable params
     Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
-    MpiLayer<Dtype>* __as_mpi__ =
-        dynamic_cast<MpiLayer<Dtype>*>(layers_[layer_id].get());
+    MpiOperable<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiOperable<Dtype>*>(layers_[layer_id].get());
     if ((scheduler->getRank() == 0 && !__as_mpi__) ||
         (scheduler->getRank() != 0 && __as_mpi__)) {
-
       // This layer "owns" this parameter blob -- it is either anonymous
       // (i.e., not given a param_name) or explicitly given a name that we
       // haven't already seen.

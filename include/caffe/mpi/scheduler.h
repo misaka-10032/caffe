@@ -10,7 +10,6 @@
 
 #include <boost/mpi.hpp>
 #include <boost/mpi/collectives.hpp>
-
 #include "caffe/net.hpp"
 
 namespace mpi = boost::mpi;
@@ -39,7 +38,7 @@ namespace caffe {
                                   mpi::communicator* world);
     static Scheduler<Dtype> *Get();
 
-    inline int getParallelism() {
+    inline int getSlaveCnt() {
       return world->size() - 1;  // only slaves work in parallel
     }
 
@@ -60,32 +59,14 @@ namespace caffe {
     void BroadcastBlob(Blob<Dtype>& blob, int root);
     void BroadcastBlobs(vector<Blob<Dtype>*>& blobs, int root);
     void SendBlob(int dst, int tag, Blob<Dtype>& blob);
+    void SendBlobs(int dst, vector<Blob<Dtype>*>& blobs);
     void RecvBlob(int src, int tag, Blob<Dtype>& blob);
-
-    inline void sync() {
-      int s;
-      const int ACK = 1;
-      if (world->rank() == 0) {
-        s = 1;
-        LOG(INFO) << "master set sync as 1";
-      }
-
-      broadcast(*world, s, 0);
-
-      if (world->rank() == 0) {
-        int size = world->size();
-        for (int i = 1; i < size; i++) {
-          world->recv(i, ACK);
-        }
-      } else {
-        LOG(INFO) << "slave recv sync as " << s;
-        world->send(0, ACK);
-      }
-    }
+    void RecvBlobs(int src, vector<Blob<Dtype>*>& blobs);
+    void SendLoss(int dst, Dtype& loss);
+    void RecvLoss(int src, Dtype& loss);
 
   protected:
     explicit Scheduler<Dtype>();
-
     shared_ptr<mpi::environment> env;
     shared_ptr<mpi::communicator> world;
 
