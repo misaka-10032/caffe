@@ -41,6 +41,11 @@ int main(int argc, char** argv) {
       *(blob_acc->mutable_cpu_diff() + idx) = (float) 0;
     }
   }
+
+  for (int i = 0; i < 5; i++) {
+    Blob<float>::AccumulateDiff(blob_acc, blob);
+  }
+  blob_acc->ResetDiff();
   for (int i = 0; i < 5; i++) {
     Blob<float>::AccumulateDiff(blob_acc, blob);
   }

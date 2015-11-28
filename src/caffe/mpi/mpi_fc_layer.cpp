@@ -67,8 +67,6 @@ void MpiFcLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     }
   }  // parameter initialization
   this->param_propagate_down_.resize(this->blobs_.size(), true);
-
-//  LOG(INFO) << this->parallelism_;
 }
 
 template <typename Dtype>

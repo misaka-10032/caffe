@@ -224,21 +224,22 @@ void Solver<Dtype>::Step(int iters) {
     }
     loss /= param_.iter_size();
 
-    // average the loss across iterations for smoothed reporting
-    if (losses.size() < average_loss) {
-      losses.push_back(loss);
-      int size = losses.size();
-      smoothed_loss = (smoothed_loss * (size - 1) + loss) / size;
-    } else {
-      int idx = (iter_ - start_iter) % average_loss;
-      smoothed_loss += (loss - losses[idx]) / average_loss;
-      losses[idx] = loss;
-    }
-
     Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
 
     // rocky: only master displays loss
     if (display && scheduler->getRank() == 0) {
+
+      // average the loss across iterations for smoothed reporting
+      if (losses.size() < average_loss) {
+        losses.push_back(loss);
+        int size = losses.size();
+        smoothed_loss = (smoothed_loss * (size - 1) + loss) / size;
+      } else {
+        int idx = (iter_ - start_iter) % average_loss;
+        smoothed_loss += (loss - losses[idx]) / average_loss;
+        losses[idx] = loss;
+      }
+
       LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
                                          << ", loss = " << smoothed_loss;
       const vector<Blob<Dtype> *> &result = net_->output_blobs();

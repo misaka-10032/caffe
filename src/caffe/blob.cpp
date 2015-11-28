@@ -760,8 +760,6 @@ void Blob<Dtype>::ResetDiff() {
 template <typename Dtype>
 void Blob<Dtype>::AccumulateDiff(Blob<Dtype>* blobAcc,
                                  Blob<Dtype>* blobDlt) {
-  // TODO: to be tested
-
   vector<int> shapeAcc = blobAcc->shape();
   vector<int> shapeDlt = blobDlt->shape();
   int shapeSize = shapeAcc.size();

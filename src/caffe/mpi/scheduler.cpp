@@ -47,8 +47,6 @@ namespace caffe {
     return instance_.get();
   }
 
-
-
   template <typename Dtype>
   void Scheduler<Dtype>::SetUpLayer(Net<Dtype>* net_, int layer_id) {
     shared_ptr<Layer<Dtype> >& layer = net_->layers_[layer_id];
@@ -201,6 +199,7 @@ namespace caffe {
                 blobs[slave_id - 1].reset(new Blob<Dtype>());
                 RecvBlob(slave_id, top_id, *blobs[slave_id - 1]);
               }
+              // TODO: transpose, append, transpose?
               Blob<Dtype>::Merge1(blobs, top_vecs[top_id]);
             }
             /* 3. receive & accumulate loss */
@@ -218,8 +217,9 @@ namespace caffe {
             BroadcastBlobs(bottom_vecs, 0);
             /* 2. do local job */
             Dtype layer_loss = layer->Forward(bottom_vecs, sliced_top_vecs);
+
             /* 3. send blob */
-            int top_cnt = top_vecs.size();
+            int top_cnt = sliced_top_vecs.size();
             for (int top_id = 0; top_id < top_cnt; top_id++) {
               SendBlob(0, top_id, *sliced_top_vecs[top_id]);
             }
@@ -243,7 +243,7 @@ namespace caffe {
   void Scheduler<Dtype>::BroadcastBlobs(vector<Blob<Dtype>*>& blobs, int root) {
     int blob_cnt = blobs.size();
     for (int i = 0; i < blob_cnt; i++) {
-      BroadcastBlob(*blobs[i], 0);
+      BroadcastBlob(*blobs[i], root);
     }
   }
 
@@ -325,15 +325,20 @@ namespace caffe {
                 SendBlob(slave_id, top_id, *blobs[slave_id - 1]);
               }
             }
+
             /* 2. recv and combine bottoms from slaves */
             int bottom_cnt = bottom_vecs.size();
             for (int bottom_id = 0; bottom_id < bottom_cnt; bottom_id++) {
               shared_ptr<Blob<Dtype> > blob(new Blob<Dtype>());
               Blob<Dtype>* bottom_vec = bottom_vecs[bottom_id];
-              bottom_vec->ResetDiff();  /* Need reset diff before accum */
+//              bottom_vec->ResetDiff();  /* Need reset diff before accum */
               for (int slave_id = 1; slave_id <= slave_cnt; slave_id++) {
-                RecvBlob(slave_id, bottom_id, *blob);
-                Blob<Dtype>::AccumulateDiff(bottom_vecs[bottom_id], blob.get());
+                if (slave_id == 1) {
+                  RecvBlob(slave_id, bottom_id, *bottom_vec);
+                } else {
+                  RecvBlob(slave_id, bottom_id, *blob);
+                  Blob<Dtype>::AccumulateDiff(bottom_vec, blob.get());
+                }
               }
             }
           }
@@ -350,6 +355,7 @@ namespace caffe {
             for (int top_id = 0; top_id < top_cnt; top_id++) {
               RecvBlob(0, top_id, *sliced_top_vecs[top_id]);
             }
+
             /* 2. back propagate */
             layer->Backward(sliced_top_vecs, bottom_need_backward, bottom_vecs);
             /* 3. send bottoms */

@@ -201,6 +201,16 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       AppendParam(param, layer_id, param_id);
     }
+
+    // rocky: need_backward logic SUCKS! FXXK!
+    // rocky: that pernicious bug costs me two days!
+    // rocky: force MPI layers to backward
+    MpiLayer<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiLayer<Dtype>*>(layers_[layer_id].get());
+    if (__as_mpi__) {
+      need_backward = true;
+    }
+
     // Finally, set the backward flag
     layer_need_backward_.push_back(need_backward);
     if (need_backward) {
