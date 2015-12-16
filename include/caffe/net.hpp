@@ -11,6 +11,8 @@
 #include "caffe/common.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
+#include "caffe/mpi/scheduler.h"
+#include "caffe/mpi/operators.h"
 
 namespace caffe {
 
@@ -20,8 +22,17 @@ namespace caffe {
  *
  * TODO(dox): more thorough description.
  */
-template <typename Dtype>
+
+template <typename Dtype> class Scheduler;
+template <typename Dtype> class Operator;
+template <typename Dtype> class MpiFcOperator;
+
+  template <typename Dtype>
 class Net {
+  friend class Scheduler<Dtype>;
+  friend class Operator<Dtype>;
+  friend class MpiFcOperator<Dtype>;
+
  public:
   explicit Net(const NetParameter& param, const Net* root_net = NULL);
   explicit Net(const string& param_file, Phase phase,
@@ -246,6 +257,10 @@ class Net {
   vector<bool> layer_need_backward_;
   /// @brief the blobs storing intermediate results between the layer.
   vector<shared_ptr<Blob<Dtype> > > blobs_;
+
+  /* sliced blobs for slaves */
+  vector<shared_ptr<Blob<Dtype> > > sliced_blobs_;
+
   vector<string> blob_names_;
   map<string, int> blob_names_index_;
   vector<bool> blob_need_backward_;
@@ -257,6 +272,8 @@ class Net {
   vector<vector<bool> > bottom_need_backward_;
   /// top_vecs stores the vectors containing the output for each layer
   vector<vector<Blob<Dtype>*> > top_vecs_;
+  /// sliced_top_vecs stores the sliced top_vecs for MpiLayers
+  vector<vector<Blob<Dtype>*> > sliced_top_vecs_;
   vector<vector<int> > top_id_vecs_;
   /// Vector of weight in the loss (or objective) function of each net blob,
   /// indexed by blob_id.
@@ -282,6 +299,11 @@ class Net {
    * and learnable_params_[learnable_param_ids_[i]] gives its owner.
    */
   vector<int> learnable_param_ids_;
+
+  // rocky
+  vector<int> learnable_param_layer_ids_;
+
+
   /// the learning rate multipliers for learnable_params_
   vector<float> params_lr_;
   vector<bool> has_params_lr_;

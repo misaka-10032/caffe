@@ -13,6 +13,7 @@ namespace bp = boost::python;
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
 #include "caffe/util/signal_handler.h"
+#include "caffe/mpi/scheduler.h"
 
 using caffe::Blob;
 using caffe::Caffe;
@@ -205,6 +206,7 @@ int train() {
     CopyLayers(solver.get(), FLAGS_weights);
   }
 
+
   if (gpus.size() > 1) {
     caffe::P2PSync<float> sync(solver, NULL, solver->param());
     sync.run(gpus);
@@ -376,6 +378,11 @@ int time() {
 RegisterBrewFunction(time);
 
 int main(int argc, char** argv) {
+  // rocky
+  mpi::environment env;
+  mpi::communicator world;
+  caffe::Scheduler<float>::Init(&env, &world);
+
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
   // Usage message.

@@ -2,9 +2,14 @@
 set(Caffe_LINKER_LIBS "")
 
 # ---[ Boost
-find_package(Boost 1.46 REQUIRED COMPONENTS system thread)
+find_package(Boost 1.46 REQUIRED COMPONENTS system thread mpi serialization)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${Boost_LIBRARIES})
+
+# ---[ Mpi
+find_package(MPI REQUIRED)
+include_directories(${MPI_CXX_INCLUDE_PATH})
+list(APPEND Caffe_LINKER_LIBS ${MPI_CXX_LIBRARIES})
 
 # ---[ Threads
 find_package(Threads REQUIRED)

@@ -139,6 +139,20 @@ void caffe_add<double>(const int n, const double* a, const double* b,
 }
 
 template <>
+void caffe_add<int>(const int n, const int* a, const int* b,
+                    int* y) {
+  vAdd(n, a, b, y);
+}
+
+template <>
+void caffe_add<unsigned int>(const int n,
+                             const unsigned int* a,
+                             const unsigned int* b,
+                             unsigned int* y) {
+  vAdd(n, a, b, y);
+}
+
+template <>
 void caffe_sub<float>(const int n, const float* a, const float* b,
     float* y) {
   vsSub(n, a, b, y);

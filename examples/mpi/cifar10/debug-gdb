@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mpirun -np 3 -wdir $CAFFE_ROOT xterm -geometry 128x48 -e gdb build/tools/caffe-d

@@ -16,6 +16,8 @@
 #include "caffe/util/insert_splits.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
+#include "caffe/mpi/scheduler.h"
+#include "caffe/mpi/mpi_layers.h"
 
 #include "caffe/test/test_caffe_main.hpp"
 
@@ -40,6 +42,10 @@ template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
   CHECK(Caffe::root_solver() || root_net_)
       << "root_net_ needs to be set for all non-root solvers";
+
+  // Get the singleton scheduler
+  Scheduler<Dtype> *scheduler = Scheduler<Dtype>::Get();
+
   // Set phase from the state.
   phase_ = in_param.state().phase();
   // Filter layers based on their include/exclude rules and
@@ -75,6 +81,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   // For each layer, set up its input and output
   bottom_vecs_.resize(param.layer_size());
   top_vecs_.resize(param.layer_size());
+  sliced_top_vecs_.resize(param.layer_size());
   bottom_id_vecs_.resize(param.layer_size());
   param_id_vecs_.resize(param.layer_size());
   top_id_vecs_.resize(param.layer_size());
@@ -138,14 +145,24 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       // Set up size of top blobs using root_net_
       const vector<Blob<Dtype>*>& base_top = root_net_->top_vecs_[layer_id];
       const vector<Blob<Dtype>*>& this_top = this->top_vecs_[layer_id];
+
+      // TODO: not tested
+      const vector<Blob<Dtype>*>& base_sliced_top = root_net_->sliced_top_vecs_[layer_id];
+      const vector<Blob<Dtype>*>& this_sliced_top = this->sliced_top_vecs_[layer_id];
+
       for (int top_id = 0; top_id < base_top.size(); ++top_id) {
         this_top[top_id]->ReshapeLike(*base_top[top_id]);
+
+        // TODO: not tested
+        this_sliced_top[top_id]->ReshapeLike(*base_sliced_top[top_id]);
+
         LOG(INFO) << "Created top blob " << top_id << " (shape: "
             << this_top[top_id]->shape_string() <<  ") for shared layer "
             << layer_param.name();
       }
     } else {
-      layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
+      /* rocky note: normally goes this flow */
+      scheduler->SetUpLayer(this, layer_id);
     }
     LOG_IF(INFO, Caffe::root_solver())
         << "Setting up " << layer_names_[layer_id];
@@ -166,8 +183,12 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
         << "Memory required for data: " << memory_used_ * sizeof(Dtype);
     const int param_size = layer_param.param_size();
     const int num_param_blobs = layers_[layer_id]->blobs().size();
-    CHECK_LE(param_size, num_param_blobs)
+
+    if (scheduler->getRank() == 0) {
+      CHECK_LE(param_size, num_param_blobs)
         << "Too many params specified for layer " << layer_param.name();
+    }
+
     ParamSpec default_param_spec;
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       const ParamSpec* param_spec = (param_id < param_size) ?
@@ -180,6 +201,16 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       AppendParam(param, layer_id, param_id);
     }
+
+    // rocky: need_backward logic SUCKS! FXXK!
+    // rocky: that pernicious bug costs me two days!
+    // rocky: force MPI layers to backward
+    MpiOperable<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiOperable<Dtype>*>(layers_[layer_id].get());
+    if (__as_mpi__) {
+      need_backward = true;
+    }
+
     // Finally, set the backward flag
     layer_need_backward_.push_back(need_backward);
     if (need_backward) {
@@ -188,63 +219,68 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
   }
+
+  // TODO(rocky): check if really need this logic
+  // TODO: add back if necessary
   // Go through the net backwards to determine which blobs contribute to the
   // loss.  We can skip backward computation for blobs that don't contribute
   // to the loss.
   // Also checks if all bottom blobs don't need backward computation (possible
   // because the skip_propagate_down param) and so we can skip bacward
   // computation for the entire layer
-  set<string> blobs_under_loss;
-  set<string> blobs_skip_backp;
-  for (int layer_id = layers_.size() - 1; layer_id >= 0; --layer_id) {
-    bool layer_contributes_loss = false;
-    bool layer_skip_propagate_down = true;
-    for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
-      const string& blob_name = blob_names_[top_id_vecs_[layer_id][top_id]];
-      if (layers_[layer_id]->loss(top_id) ||
-          (blobs_under_loss.find(blob_name) != blobs_under_loss.end())) {
-        layer_contributes_loss = true;
-      }
-      if (blobs_skip_backp.find(blob_name) == blobs_skip_backp.end()) {
-        layer_skip_propagate_down = false;
-      }
-      if (layer_contributes_loss && !layer_skip_propagate_down)
-        break;
-    }
-    // If this layer can skip backward computation, also all his bottom blobs
-    // don't need backpropagation
-    if (layer_need_backward_[layer_id] && layer_skip_propagate_down) {
-      layer_need_backward_[layer_id] = false;
-      for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
-               ++bottom_id) {
-        bottom_need_backward_[layer_id][bottom_id] = false;
-      }
-    }
-    if (!layer_contributes_loss) { layer_need_backward_[layer_id] = false; }
-    if (Caffe::root_solver()) {
-      if (layer_need_backward_[layer_id]) {
-        LOG(INFO) << layer_names_[layer_id] << " needs backward computation.";
-      } else {
-        LOG(INFO) << layer_names_[layer_id]
-            << " does not need backward computation.";
-      }
-    }
-    for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
-         ++bottom_id) {
-      if (layer_contributes_loss) {
-        const string& blob_name =
-            blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
-        blobs_under_loss.insert(blob_name);
-      } else {
-        bottom_need_backward_[layer_id][bottom_id] = false;
-      }
-      if (!bottom_need_backward_[layer_id][bottom_id]) {
-        const string& blob_name =
-                   blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
-        blobs_skip_backp.insert(blob_name);
-      }
-    }
-  }
+//  set<string> blobs_under_loss;
+//  set<string> blobs_skip_backp;
+//  for (int layer_id = layers_.size() - 1; layer_id >= 0; --layer_id) {
+//    bool layer_contributes_loss = false;
+//    bool layer_skip_propagate_down = true;
+//    for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
+//      const string& blob_name = blob_names_[top_id_vecs_[layer_id][top_id]];
+//      if (layers_[layer_id]->loss(top_id) ||
+//          (blobs_under_loss.find(blob_name) != blobs_under_loss.end())) {
+//        layer_contributes_loss = true;
+//      }
+//      if (blobs_skip_backp.find(blob_name) == blobs_skip_backp.end()) {
+//        layer_skip_propagate_down = false;
+//      }
+//      if (layer_contributes_loss && !layer_skip_propagate_down)
+//        break;
+//    }
+//    // If this layer can skip backward computation, also all his bottom blobs
+//    // don't need backpropagation
+//    if (layer_need_backward_[layer_id] && layer_skip_propagate_down) {
+//      layer_need_backward_[layer_id] = false;
+//      for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
+//               ++bottom_id) {
+//        bottom_need_backward_[layer_id][bottom_id] = false;
+//      }
+//    }
+//    if (!layer_contributes_loss) { layer_need_backward_[layer_id] = false; }
+//    if (Caffe::root_solver()) {
+//      if (layer_need_backward_[layer_id]) {
+//        LOG(INFO) << layer_names_[layer_id] << " needs backward computation.";
+//      } else {
+//        LOG(INFO) << layer_names_[layer_id]
+//            << " does not need backward computation.";
+//      }
+//    }
+//    for (int bottom_id = 0; bottom_id < bottom_vecs_[layer_id].size();
+//         ++bottom_id) {
+//      if (layer_contributes_loss) {
+//        const string& blob_name =
+//            blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
+//        blobs_under_loss.insert(blob_name);
+//      } else {
+//        bottom_need_backward_[layer_id][bottom_id] = false;
+//      }
+//      if (!bottom_need_backward_[layer_id][bottom_id]) {
+//        const string& blob_name =
+//                   blob_names_[bottom_id_vecs_[layer_id][bottom_id]];
+//        blobs_skip_backp.insert(blob_name);
+//      }
+//    }
+//  }
+
+
   // Handle force_backward if needed.
   if (param.force_backward()) {
     for (int layer_id = 0; layer_id < layers_.size(); ++layer_id) {
@@ -278,8 +314,12 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   for (size_t layer_id = 0; layer_id < layer_names_.size(); ++layer_id) {
     layer_names_index_[layer_names_[layer_id]] = layer_id;
   }
-  ShareWeights();
+
+  // TODO: support sharing weights later
+//  ShareWeights();
+
   debug_info_ = param.debug_info();
+
   LOG_IF(INFO, Caffe::root_solver()) << "Network initialization done.";
 }
 
@@ -398,6 +438,11 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
         << layer_param->name() << " -> " << blob_name << " (in-place)";
     top_vecs_[layer_id].push_back(blobs_[(*blob_name_to_idx)[blob_name]].get());
     top_id_vecs_[layer_id].push_back((*blob_name_to_idx)[blob_name]);
+
+    // rocky
+    sliced_top_vecs_[layer_id].push_back(
+        sliced_blobs_[(*blob_name_to_idx)[blob_name]].get());
+
   } else if (blob_name_to_idx &&
              blob_name_to_idx->find(blob_name) != blob_name_to_idx->end()) {
     // If we are not doing in-place computation but have duplicated blobs,
@@ -418,9 +463,15 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
     blobs_.push_back(blob_pointer);
     blob_names_.push_back(blob_name);
     blob_need_backward_.push_back(false);
+
+    // rocky
+    shared_ptr<Blob<Dtype> > sliced_blob_pointer(new Blob<Dtype>());
+    sliced_blobs_.push_back(sliced_blob_pointer);
+
     if (blob_name_to_idx) { (*blob_name_to_idx)[blob_name] = blob_id; }
     if (layer_id == -1) {
       // Set the (explicitly specified) dimensions of the input blob.
+      // TODO: why need reshape here? done in layer?
       if (param.input_dim_size() > 0) {
         blob_pointer->Reshape(param.input_dim(top_id * 4),
                               param.input_dim(top_id * 4 + 1),
@@ -434,6 +485,9 @@ void Net<Dtype>::AppendTop(const NetParameter& param, const int layer_id,
     } else {
       top_id_vecs_[layer_id].push_back(blob_id);
       top_vecs_[layer_id].push_back(blob_pointer.get());
+
+      // rocky
+      sliced_top_vecs_[layer_id].push_back(sliced_blob_pointer.get());
     }
   }
   if (available_blobs) { available_blobs->insert(blob_name); }
@@ -489,20 +543,30 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
       &layer_param.param(param_id) : &default_param_spec;
   if (!param_size || !param_name.size() || (param_name.size() &&
       param_names_index_.find(param_name) == param_names_index_.end())) {
-    // This layer "owns" this parameter blob -- it is either anonymous
-    // (i.e., not given a param_name) or explicitly given a name that we
-    // haven't already seen.
-    param_owners_.push_back(-1);
-    if (param_name.size()) {
-      param_names_index_[param_name] = net_param_id;
+
+    // rocky: master and slaves have different learnable params
+    Scheduler<Dtype>* scheduler = Scheduler<Dtype>::Get();
+    MpiOperable<Dtype>* __as_mpi__ =
+        dynamic_cast<MpiOperable<Dtype>*>(layers_[layer_id].get());
+    if ((scheduler->getRank() == 0 && !__as_mpi__) ||
+        (scheduler->getRank() != 0 && __as_mpi__)) {
+      // This layer "owns" this parameter blob -- it is either anonymous
+      // (i.e., not given a param_name) or explicitly given a name that we
+      // haven't already seen.
+      param_owners_.push_back(-1);
+      if (param_name.size()) {
+        param_names_index_[param_name] = net_param_id;
+      }
+      const int learnable_param_id = learnable_params_.size();
+      learnable_params_.push_back(params_[net_param_id].get());
+      learnable_param_ids_.push_back(learnable_param_id);
+      learnable_param_layer_ids_.push_back(layer_id);
+      has_params_lr_.push_back(param_spec->has_lr_mult());
+      has_params_decay_.push_back(param_spec->has_decay_mult());
+      params_lr_.push_back(param_spec->lr_mult());
+      params_weight_decay_.push_back(param_spec->decay_mult());
     }
-    const int learnable_param_id = learnable_params_.size();
-    learnable_params_.push_back(params_[net_param_id].get());
-    learnable_param_ids_.push_back(learnable_param_id);
-    has_params_lr_.push_back(param_spec->has_lr_mult());
-    has_params_decay_.push_back(param_spec->has_decay_mult());
-    params_lr_.push_back(param_spec->lr_mult());
-    params_weight_decay_.push_back(param_spec->decay_mult());
+
   } else {
     // Named param blob with name we've seen before: share params
     const int owner_net_param_id = param_names_index_[param_name];
@@ -563,21 +627,7 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
 
 template <typename Dtype>
 Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
-  CHECK_GE(start, 0);
-  CHECK_LT(end, layers_.size());
-  Dtype loss = 0;
-  if (debug_info_) {
-    for (int i = 0; i < net_input_blobs_.size(); ++i) {
-      InputDebugInfo(i);
-    }
-  }
-  for (int i = start; i <= end; ++i) {
-    // LOG(ERROR) << "Forwarding " << layer_names_[i];
-    Dtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
-    loss += layer_loss;
-    if (debug_info_) { ForwardDebugInfo(i); }
-  }
-  return loss;
+  return Scheduler<Dtype>::Get()->ForwardFromTo(this, start, end);
 }
 
 template <typename Dtype>
@@ -633,15 +683,7 @@ string Net<Dtype>::Forward(const string& input_blob_protos, Dtype* loss) {
 
 template <typename Dtype>
 void Net<Dtype>::BackwardFromTo(int start, int end) {
-  CHECK_GE(end, 0);
-  CHECK_LT(start, layers_.size());
-  for (int i = start; i >= end; --i) {
-    if (layer_need_backward_[i]) {
-      layers_[i]->Backward(
-          top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
-      if (debug_info_) { BackwardDebugInfo(i); }
-    }
-  }
+  Scheduler<Dtype>::Get()->BackwardFromTo(this, start, end);
 }
 
 template <typename Dtype>

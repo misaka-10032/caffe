@@ -1,4 +1,8 @@
 ## General
+.*
+!.gitignore
+build-debug
+build-release
 
 # Compiled Object files
 *.slo
