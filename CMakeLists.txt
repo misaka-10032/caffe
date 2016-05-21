@@ -19,6 +19,10 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 include(ExternalProject)
 
+if(EXISTS cmake/Local.cmake)
+  include(cmake/Local.cmake)
+endif()
+
 include(cmake/Utils.cmake)
 include(cmake/Targets.cmake)
 include(cmake/Misc.cmake)
