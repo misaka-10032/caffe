@@ -166,10 +166,16 @@ public:
     typename map<vector<int>, shared_ptr<HoughBasis<Dtype> > >::iterator
         it = factory_.find(shape);
     if (it != factory_.end()) {
+      LOG(INFO) << "Found HoughBasis with shape {" << shape[0] << ", "
+                << shape[1] << ", " << shape[2] << ", " << shape[3] << "}";
       return it->second;
     } else {
+      LOG(INFO) << "Didn't find HoughBasis with shape {" << shape[0] << ", "
+                << shape[1] << ", " << shape[2] << ", " << shape[3] << "}";
       shared_ptr<HoughBasis<Dtype> > ptr(new HoughBasis<Dtype>(
             shape[0], shape[1], shape[2], shape[3]));
+      LOG(INFO) << "Finished building HoughBasis {" << shape[0] << ", "
+                << shape[1] << ", " << shape[2] << ", " << shape[3] << "}";
       factory_[shape] = ptr;
       return ptr;
     }
