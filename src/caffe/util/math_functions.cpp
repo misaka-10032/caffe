@@ -9,6 +9,50 @@
 
 namespace caffe {
 
+template <>
+void caffe_sincos(int n, const float* a, float* y, float* z) {
+#ifndef USE_MKL
+  LOG(ERROR) << "caffe_sincos is based on MKL";
+  return;
+#endif
+  vsSinCos(n, a, y, z);
+}
+
+template <>
+void caffe_sincos(int n, const double* a, double* y, double* z) {
+#ifndef USE_MKL
+  LOG(ERROR) << "caffe_sincos is based on MKL";
+  return;
+#endif
+  vdSinCos(n, a, y, z);
+}
+
+template <>
+void caffe_csrmv(const CBLAS_TRANSPOSE transa, const int m, const int k,
+                 const float alpha, const float* val, const int* ro,
+                 const int* ci, const float* x, const float beta, float* y) {
+#ifndef USE_MKL
+  LOG(ERROR) << "caffe_csrmv is based on MKL";
+  return;
+#endif
+  const char* ta = transa == CblasTrans ? "T" : "N";
+  const char* matdescra = "GUUC";
+  mkl_scsrmv(ta, &m, &k, &alpha, matdescra, val, ci, ro, ro+1, x, &beta, y);
+}
+
+template <>
+void caffe_csrmv(const CBLAS_TRANSPOSE transa, const int m, const int k,
+                 const double alpha, const double* val, const int* ro,
+                 const int* ci, const double* x, const double beta, double* y) {
+#ifndef USE_MKL
+  LOG(ERROR) << "caffe_csrmv is based on MKL";
+  return;
+#endif
+  const char* ta = transa == CblasTrans ? "T" : "N";
+  const char* matdescra = "GUUC";
+  mkl_dcsrmv(ta, &m, &k, &alpha, matdescra, val, ci, ro, ro+1, x, &beta, y);
+}
+
 template<>
 void caffe_cpu_gemm<float>(const CBLAS_TRANSPOSE TransA,
     const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,

@@ -396,6 +396,14 @@ message LayerParameter {
   optional ThresholdParameter threshold_param = 128;
   optional TileParameter tile_param = 138;
   optional WindowDataParameter window_data_param = 129;
+  optional HoughParameter hough_param = 150;
+}
+
+message HoughParameter {
+  // range of theta. -1 indicates it will be inferred.
+  optional int32 theta_range = 1 [default = -1];
+  // range of rho. -1 indicates it will be inferred.
+  optional int32 rho_range = 2 [default = -2];
 }
 
 // Message that stores parameters used to apply transformation
