@@ -136,6 +136,9 @@ class Caffe {
   inline static curandGenerator_t curand_generator() {
     return Get().curand_generator_;
   }
+  inline static cusparseHandle_t cusparse_handle() {
+    return Get().cusparse_handle_;
+  }
 #endif
 
   // Returns the mode: running on CPU or GPU.
@@ -168,6 +171,7 @@ class Caffe {
 #ifndef CPU_ONLY
   cublasHandle_t cublas_handle_;
   curandGenerator_t curand_generator_;
+  cusparseHandle_t cusparse_handle_;
 #endif
   shared_ptr<RNG> random_generator_;
 

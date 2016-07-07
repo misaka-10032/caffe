@@ -16,7 +16,7 @@ namespace caffe {
 /**
  * @brief Sparse transform matrix for Hough transform
  */
-template<typename Dtype>
+template <typename Dtype>
 class HoughBasis {
 public:
   HoughBasis(int H, int W, int THETA=-1, int RHO=-1) :
@@ -38,11 +38,13 @@ public:
     ci_.reset(new SyncedMemory(sizeof(int) * H*W*THETA));
     ro_.reset(new SyncedMemory(sizeof(int) * (1+H*W)));
 
-    Init_cpu();
+    if (Caffe::mode() == Caffe::CPU)
+      Init_cpu();
+    else
+      Init_gpu();
   }
 
-  // init only once; gpu won't help much.
-  //void Init_gpu();
+  void Init_gpu();
 
   void Init_cpu() {
     const Dtype pi = std::acos(-1);
@@ -152,7 +154,6 @@ private:
   shared_ptr<SyncedMemory> ro_;  // row offsets, array of int
 };
 
-
 /**
  * @brief Global factory for HoughBasis. As basis takes space, there's
  *        only one allocated each kind of shapes.
@@ -206,9 +207,15 @@ public:
 
 protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+                           const vector<Blob<Dtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+                           const vector<Blob<Dtype>*>& top);
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+                            const vector<bool>& propagate_down,
+                            const vector<Blob<Dtype>*>& bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+                            const vector<bool>& propagate_down,
+                            const vector<Blob<Dtype>*>& bottom);
 
   shared_ptr<HoughBasis<Dtype> > hb_ptr_;
   int H_, W_, THETA_, RHO_;

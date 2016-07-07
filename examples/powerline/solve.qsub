@@ -2,6 +2,6 @@
 
 #PBS -q titanx
 #PBS -l walltime=72:00:00
-#PBS -d /home/longqic/hed/examples/powerline
+#PBS -d /home/longqic/caffe/examples/powerline
 module load opt-python
 python solve.py 2>&1 | tee solve.qsub.log

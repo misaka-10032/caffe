@@ -52,6 +52,7 @@ layer {
   name:   "hf_label"
   bottom: "label"
   top:    "hf_label"
+  propagate_down: 0
   hough_param {}
 }
 
@@ -60,6 +61,7 @@ layer {
   type:   "LRN"
   bottom: "hf_label"
   top:    "hfn_label"
+  propagate_down: 0
   lrn_param {
     norm_region: WITHIN_CHANNEL
   }

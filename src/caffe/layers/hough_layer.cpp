@@ -47,7 +47,7 @@ void HoughLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 
 template <typename Dtype>
 void HoughLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-                                            const vector<Blob<Dtype>*>& top) {
+                                    const vector<Blob<Dtype>*>& top) {
   caffe_csrmv(CblasTrans, hb_ptr_->H()*hb_ptr_->W(), hb_ptr_->RHO()*hb_ptr_->THETA(),
               Dtype(1), hb_ptr_->val_cpu_data(), hb_ptr_->ro_cpu_data(), hb_ptr_->ci_cpu_data(),
               bottom[0]->cpu_data(), Dtype(0), top[0]->mutable_cpu_data());
@@ -55,8 +55,8 @@ void HoughLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
 
 template <typename Dtype>
 void HoughLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
-                                             const vector<bool>& propagate_down,
-                                             const vector<Blob<Dtype>*>& bottom) {
+                                     const vector<bool>& propagate_down,
+                                     const vector<Blob<Dtype>*>& bottom) {
   caffe_csrmv(CblasNoTrans, hb_ptr_->H()*hb_ptr_->W(), hb_ptr_->RHO()*hb_ptr_->THETA(),
               Dtype(1), hb_ptr_->val_cpu_data(), hb_ptr_->ro_cpu_data(), hb_ptr_->ci_cpu_data(),
               top[0]->cpu_diff(), Dtype(0), bottom[0]->mutable_cpu_diff());

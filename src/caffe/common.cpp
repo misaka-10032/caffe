@@ -119,6 +119,10 @@ Caffe::Caffe()
       != CURAND_STATUS_SUCCESS) {
     LOG(ERROR) << "Cannot create Curand generator. Curand won't be available.";
   }
+  // Try to create a cusparse handler.
+  if (cusparseCreate(&cusparse_handle_) != CUSPARSE_STATUS_SUCCESS) {
+    LOG(ERROR) << "Cannot initialize cusparse handle.";
+  }
 }
 
 Caffe::~Caffe() {
@@ -317,6 +321,28 @@ const char* curandGetErrorString(curandStatus_t error) {
     return "CURAND_STATUS_INTERNAL_ERROR";
   }
   return "Unknown curand status";
+}
+
+const char* cusparseGetErrorString(cusparseStatus_t error) {
+  switch (error) {
+  case CUSPARSE_STATUS_SUCCESS:
+    return "success.";
+  case CUSPARSE_STATUS_NOT_INITIALIZED:
+    return "the library was not initialized.";
+  case CUSPARSE_STATUS_ALLOC_FAILED:
+    return "the resources could not be allocated.";
+  case CUSPARSE_STATUS_INVALID_VALUE:
+    return "invalid parameters were passed (m,nnz<0).";
+  case CUSPARSE_STATUS_ARCH_MISMATCH:
+    return "the device does not support double precision.";
+  case CUSPARSE_STATUS_EXECUTION_FAILED:
+    return "the function failed to launch on the GPU.";
+  case CUSPARSE_STATUS_INTERNAL_ERROR:
+    return "an internal operation failed.";
+  case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
+    return "the matrix type is not supported.";
+  }
+  return "Unknown cusparse status";
 }
 
 #endif  // CPU_ONLY
