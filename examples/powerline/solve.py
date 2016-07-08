@@ -32,9 +32,9 @@ def interp_surgery(net, layers):
 # base net -- follow the editing model parameters example to make
 # a fully convolutional VGG16 net.
 # http://nbviewer.ipython.org/github/BVLC/caffe/blob/master/examples/net_surgery.ipynb
-#base_weights = '5stage-vgg.caffemodel'
-base_weights = 'hed_pretrained_bsds.caffemodel'
-#base_weights = 'models/hed1.caffemodel'
+#base_weights = 'models/5stage-vgg.caffemodel'
+#base_weights = 'models/hed_pretrained_bsds.caffemodel'
+base_weights = 'models/hed1.caffemodel'
 
 # init
 caffe.set_mode_gpu()

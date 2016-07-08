@@ -50,6 +50,7 @@ void HoughBasis<Dtype>::Init_gpu() {
   InitHoughBasis<<<CAFFE_GET_BLOCKS(H_*W_*THETA_), CAFFE_CUDA_NUM_THREADS>>>(
       H_, W_, THETA_, RHO_, (const Dtype*) sin_.gpu_data(), (const Dtype*) cos_.gpu_data(),
       rho_min_, rho_step_, val_mutable_gpu_data(), ro_mutable_gpu_data(), ci_mutable_gpu_data());
+  CUDA_POST_KERNEL_CHECK;
 }
 
 template void HoughBasis<float>::Init_gpu();

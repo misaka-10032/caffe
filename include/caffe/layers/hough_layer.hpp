@@ -109,7 +109,7 @@ public:
   static inline int InferThetaMax() { return 90; }
   // inclusive min of rho
   static inline int InferRhoMin(int H, int W) {
-    return -int(std::floor(std::sqrt(H*H+W*W)));
+    return int(std::floor(-std::sqrt(H*H+W*W)));
   }
   // exclusive max of rho
   static int InferRhoMax(int H, int W) {

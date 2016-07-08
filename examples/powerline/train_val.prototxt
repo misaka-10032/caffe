@@ -56,16 +56,17 @@ layer {
   hough_param {}
 }
 
-layer {
-  name:   "hfn_label"
-  type:   "LRN"
-  bottom: "hf_label"
-  top:    "hfn_label"
-  propagate_down: 0
-  lrn_param {
-    norm_region: WITHIN_CHANNEL
-  }
-}
+# TODO: add normalization
+#layer {
+#  name:   "hfn_label"
+#  type:   "LRN"
+#  bottom: "hf_label"
+#  top:    "hfn_label"
+#  propagate_down: 0
+#  lrn_param {
+#    norm_region: WITHIN_CHANNEL
+#  }
+#}
 
 layer { bottom: 'data' top: 'conv1_1' name: 'conv1_1' type: "Convolution"
   param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0}
@@ -137,9 +138,9 @@ layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn
   param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
   convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
-layer { type: "Hough" name: "hf_dsn1" bottom: "upscore-dsn1" top: "hf_upscore-dsn1" hough_param {} }
-layer { type: "LRN" name: "hfn_dsn1" bottom: "hf_upscore-dsn1" top: "hfn_upscore-dsn1" lrn_param {norm_region: WITHIN_CHANNEL} }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-dsn1" bottom: "hfn_label" top: "dsn1_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_dsn1" bottom: "upscore-dsn1" top: "sigmoid_dsn1" }
+layer { type: "Hough" name: "hf_dsn1" bottom: "sigmoid_dsn1" top: "hf_dsn1" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_dsn1" bottom: "hf_label" top: "dsn1_loss" }
 
 ### DSN conv 2 ###
 layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
@@ -149,9 +150,9 @@ layer { type: "Deconvolution" name: 'upsample_2' bottom: 'score-dsn2' top: 'scor
   param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
   convolution_param { kernel_size: 4 stride: 2 num_output: 1 } }
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'upscore-dsn2' }
-layer { type: "Hough" name: "hf_dsn2" bottom: "upscore-dsn2" top: "hf_upscore-dsn2" hough_param {} }
-layer { type: "LRN" name: "hfn_dsn2" bottom: "hf_upscore-dsn2" top: "hfn_upscore-dsn2" lrn_param {norm_region: WITHIN_CHANNEL} }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-dsn2" bottom: "hfn_label" top: "dsn2_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_dsn2" bottom: "upscore-dsn2" top: "sigmoid_dsn2" }
+layer { type: "Hough" name: "hf_dsn2" bottom: "sigmoid_dsn2" top: "hf_dsn2" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_dsn2" bottom: "hf_label" top: "dsn2_loss" }
 
 ### DSN conv 3 ###
 layer { name: 'score-dsn3' type: "Convolution" bottom: 'conv3_3' top: 'score-dsn3'
@@ -161,9 +162,9 @@ layer { type: "Deconvolution" name: 'upsample_4' bottom: 'score-dsn3' top: 'scor
   param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
   convolution_param { kernel_size: 8 stride: 4 num_output: 1 } }
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'upscore-dsn3' }
-layer { type: "Hough" name: "hf_dsn3" bottom: "upscore-dsn3" top: "hf_upscore-dsn3" hough_param {} }
-layer { type: "LRN" name: "hfn_dsn3" bottom: "hf_upscore-dsn3" top: "hfn_upscore-dsn3" lrn_param {norm_region: WITHIN_CHANNEL} }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-dsn3" bottom: "hfn_label" top: "dsn3_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_dsn3" bottom: "upscore-dsn3" top: "sigmoid_dsn3" }
+layer { type: "Hough" name: "hf_dsn3" bottom: "sigmoid_dsn3" top: "hf_dsn3" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_dsn3" bottom: "hf_label" top: "dsn3_loss" }
 
 ###DSN conv 4###
 layer { name: 'score-dsn4' type: "Convolution" bottom: 'conv4_3' top: 'score-dsn4'
@@ -173,9 +174,9 @@ layer { type: "Deconvolution" name: 'upsample_8' bottom: 'score-dsn4' top: 'scor
   param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
   convolution_param { kernel_size: 16 stride: 8 num_output: 1 } }
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn4-up' bottom: 'data' top: 'upscore-dsn4' }
-layer { type: "Hough" name: "hf_dsn4" bottom: "upscore-dsn4" top: "hf_upscore-dsn4" hough_param {} }
-layer { type: "LRN" name: "hfn_dsn4" bottom: "hf_upscore-dsn4" top: "hfn_upscore-dsn4" lrn_param {norm_region: WITHIN_CHANNEL} }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-dsn4" bottom: "hfn_label" top: "dsn4_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_dsn4" bottom: "upscore-dsn4" top: "sigmoid_dsn4" }
+layer { type: "Hough" name: "hf_dsn4" bottom: "sigmoid_dsn4" top: "hf_dsn4" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_dsn4" bottom: "hf_label" top: "dsn4_loss" }
 
 ###DSN conv 5###
 layer { name: 'score-dsn5' type: "Convolution" bottom: 'conv5_3' top: 'score-dsn5'
@@ -185,16 +186,18 @@ layer { type: "Deconvolution" name: 'upsample_16' bottom: 'score-dsn5' top: 'sco
   param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
   convolution_param { kernel_size: 32 stride: 16 num_output: 1 } }
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn5-up' bottom: 'data' top: 'upscore-dsn5' }
-layer { type: "Hough" name: "hf_dsn5" bottom: "upscore-dsn5" top: "hf_upscore-dsn5" hough_param {} }
-layer { type: "LRN" name: "hfn_dsn5" bottom: "hf_upscore-dsn5" top: "hfn_upscore-dsn5" lrn_param {norm_region: WITHIN_CHANNEL} }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-dsn5" bottom: "hfn_label" top: "dsn5_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_dsn5" bottom: "upscore-dsn5" top: "sigmoid_dsn5" }
+layer { type: "Hough" name: "hf_dsn5" bottom: "sigmoid_dsn5" top: "hf_dsn5" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_dsn5" bottom: "hf_label" top: "dsn5_loss" }
 
 ### Concat and multiscale weight layer ###
-layer { name: "concat" bottom: "hfn_upscore-dsn1"  bottom: "hfn_upscore-dsn2" bottom: "hfn_upscore-dsn3"
-         bottom: "hfn_upscore-dsn4" bottom: "hfn_upscore-dsn5" top: "hfn_concat-upscore" type: "Concat"
+layer { name: "concat" bottom: "upscore-dsn1"  bottom: "upscore-dsn2" bottom: "upscore-dsn3"
+         bottom: "upscore-dsn4" bottom: "upscore-dsn5" top: "concat-upscore" type: "Concat"
   concat_param { concat_dim: 1} }
-layer { name: 'new-score-weighting' type: "Convolution" bottom: 'hfn_concat-upscore' top: 'hfn_upscore-fuse'
+layer { name: 'new-score-weighting' type: "Convolution" bottom: 'concat-upscore' top: 'upscore-fuse'
   param { lr_mult: 0.001 decay_mult: 1 } param { lr_mult: 0.002 decay_mult: 0}
   convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 weight_filler {type: "constant" value: 0.2} } }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfn_upscore-fuse" bottom: "hfn_label" top:"fuse_loss"  loss_weight: 1}
+layer { type: "Sigmoid" name: "sigmoid_fuse" bottom: "upscore-fuse" top: "sigmoid_fuse" }
+layer { type: "Hough" name: "hf_fuse" bottom: "sigmoid_fuse" top: "hf_fuse" hough_param {} }
+layer { type: "EuclideanLoss" bottom: "hf_fuse" bottom: "hf_label" top: "fuse_loss" }
 

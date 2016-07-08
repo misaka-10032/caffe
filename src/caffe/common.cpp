@@ -341,6 +341,10 @@ const char* cusparseGetErrorString(cusparseStatus_t error) {
     return "an internal operation failed.";
   case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
     return "the matrix type is not supported.";
+  case CUSPARSE_STATUS_ZERO_PIVOT:
+    return "CUSPARSE_STATUS_ZERO_PIVOT";
+  case CUSPARSE_STATUS_MAPPING_ERROR:
+    return "CUSPARSE_STATUS_MAPPING_ERROR";
   }
   return "Unknown cusparse status";
 }
