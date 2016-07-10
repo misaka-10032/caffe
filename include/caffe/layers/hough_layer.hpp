@@ -34,9 +34,13 @@ public:
     theta_step_ = Dtype(theta_max_-theta_min_) / THETA;
     rho_step_ = Dtype(rho_max_-rho_min_) / RHO;
 
-    v_.reset(new SyncedMemory(sizeof(Dtype) * H*W*THETA));
-    ci_.reset(new SyncedMemory(sizeof(int) * H*W*THETA));
-    ro_.reset(new SyncedMemory(sizeof(int) * (1+H*W)));
+    csr_val_.reset(new SyncedMemory(sizeof(Dtype) * H*W*THETA));
+    csr_ci_.reset(new SyncedMemory(sizeof(int) * H*W*THETA));
+    csr_ro_.reset(new SyncedMemory(sizeof(int) * (1+H*W)));
+
+    csc_val_.reset(new SyncedMemory(sizeof(Dtype) * H*W*THETA));
+    csc_ri_.reset(new SyncedMemory(sizeof(int) * H*W*THETA));
+    csc_co_.reset(new SyncedMemory(sizeof(int) * (1+THETA*RHO)));
 
     if (Caffe::mode() == Caffe::CPU)
       Init_cpu();
@@ -71,37 +75,46 @@ public:
                   w * ((Dtype*) cos_.cpu_data())[theta_i];
       int rho_i = int( (rho-rho_min_)/rho_step_ );
       int ci = theta_i * RHO_ + rho_i;  // col idx
-      val_mutable_cpu_data()[ro+theta_i] = Dtype(1);
-      ci_mutable_cpu_data()[ro+theta_i] = ci;
+      csr_val_mutable_cpu_data()[ro+theta_i] = Dtype(1);
+      csr_ci_mutable_cpu_data()[ro+theta_i] = ci;
 
       if (theta_i == 0) {
-        ro_mutable_cpu_data()[hw] = ro;
+        csr_ro_mutable_cpu_data()[hw] = ro;
         if (idx == H_*W_*THETA_-1) {
-          ro_mutable_cpu_data()[hw+1] = ro + THETA_;
+          csr_ro_mutable_cpu_data()[hw+1] = ro + THETA_;
         }
       }
     }
-  }
+
+    caffe_csr2csc(H_*W_, THETA_*RHO_, H_*W_*THETA_,
+                  csr_val_cpu_data(), csr_ro_cpu_data(), csr_ci_cpu_data(),
+                  csc_val_mutable_cpu_data(), csc_ri_mutable_cpu_data(),
+                  csc_co_mutable_cpu_data());
+}
 
   inline int H() { return H_; }
   inline int W() { return W_; }
   inline int RHO() { return RHO_; }
   inline int THETA() { return THETA_; }
-  inline const Dtype* val_cpu_data() { return (const Dtype*) v_->cpu_data(); }
-  inline const int* ci_cpu_data() { return (const int*) ci_->cpu_data(); }
-  inline const int* ro_cpu_data() { return (const int*) ro_->cpu_data(); }
-  inline const int* pb_cpu_data() { return (const int*) ro_->cpu_data(); }
-  inline const int* pe_cpu_data() { return (const int*) ro_->cpu_data()+1; }
-  inline const Dtype* val_gpu_data() { return (const Dtype*) v_->gpu_data(); }
-  inline const int* ci_gpu_data() { return (const int*) ci_->gpu_data(); }
-  inline const int* ro_gpu_data() { return (const int*) ro_->gpu_data(); }
-  inline const int* pb_gpu_data() { return (const int*) ro_->gpu_data(); }
-  inline const int* pe_gpu_data() { return (const int*) ro_->gpu_data()+1; }
   inline int theta_min() { return theta_min_; }
   inline int theta_max() { return theta_max_; }
   inline int rho_min() { return rho_min_; }
   inline int rho_max() { return rho_max_; }
   inline int nnz() { return H_*W_*THETA_; }
+
+  inline const Dtype* csr_val_cpu_data() { return (const Dtype*) csr_val_->cpu_data(); }
+  inline const int* csr_ro_cpu_data() { return (const int*) csr_ro_->cpu_data(); }
+  inline const int* csr_ci_cpu_data() { return (const int*) csr_ci_->cpu_data(); }
+  inline const Dtype* csr_val_gpu_data() { return (const Dtype*) csr_val_->gpu_data(); }
+  inline const int* csr_ro_gpu_data() { return (const int*) csr_ro_->gpu_data(); }
+  inline const int* csr_ci_gpu_data() { return (const int*) csr_ci_->gpu_data(); }
+
+  inline const Dtype* csc_val_cpu_data() { return (const Dtype*) csc_val_->cpu_data(); }
+  inline const int* csc_ri_cpu_data() { return (const int*) csc_ri_->cpu_data(); }
+  inline const int* csc_co_cpu_data() { return (const int*) csc_co_->cpu_data(); }
+  inline const Dtype* csc_val_gpu_data() { return (const Dtype*) csc_val_->gpu_data(); }
+  inline const int* csc_ri_gpu_data() { return (const int*) csc_ri_->gpu_data(); }
+  inline const int* csc_co_gpu_data() { return (const int*) csc_co_->gpu_data(); }
 
   // inclusive min of theta
   static inline int InferThetaMin() { return -90; }
@@ -126,16 +139,19 @@ public:
   }
 
 protected:
-  inline Dtype* val_mutable_cpu_data() { return (Dtype*) v_->mutable_cpu_data(); }
-  inline int* ci_mutable_cpu_data() { return (int*) ci_->mutable_cpu_data(); }
-  inline int* ro_mutable_cpu_data() { return (int*) ro_->mutable_cpu_data(); }
-  inline int* pb_mutable_cpu_data() { return (int*) ro_->mutable_cpu_data(); }
-  inline int* pe_mutable_cpu_data() { return (int*) ro_->mutable_cpu_data()+1; }
-  inline Dtype* val_mutable_gpu_data() { return (Dtype*) v_->mutable_gpu_data(); }
-  inline int* ci_mutable_gpu_data() { return (int*) ci_->mutable_gpu_data(); }
-  inline int* ro_mutable_gpu_data() { return (int*) ro_->mutable_gpu_data(); }
-  inline int* pb_mutable_gpu_data() { return (int*) ro_->mutable_gpu_data(); }
-  inline int* pe_mutable_gpu_data() { return (int*) ro_->mutable_gpu_data()+1; }
+  inline Dtype* csr_val_mutable_cpu_data() { return (Dtype*) csr_val_->mutable_cpu_data(); }
+  inline int* csr_ro_mutable_cpu_data() { return (int*) csr_ro_->mutable_cpu_data(); }
+  inline int* csr_ci_mutable_cpu_data() { return (int*) csr_ci_->mutable_cpu_data(); }
+  inline Dtype* csr_val_mutable_gpu_data() { return (Dtype*) csr_val_->mutable_gpu_data(); }
+  inline int* csr_ro_mutable_gpu_data() { return (int*) csr_ro_->mutable_gpu_data(); }
+  inline int* csr_ci_mutable_gpu_data() { return (int*) csr_ci_->mutable_gpu_data(); }
+
+  inline Dtype* csc_val_mutable_cpu_data() { return (Dtype*) csc_val_->mutable_cpu_data(); }
+  inline int* csc_ri_mutable_cpu_data() { return (int*) csc_ri_->mutable_cpu_data(); }
+  inline int* csc_co_mutable_cpu_data() { return (int*) csc_co_->mutable_cpu_data(); }
+  inline Dtype* csc_val_mutable_gpu_data() { return (Dtype*) csc_val_->mutable_gpu_data(); }
+  inline int* csc_ri_mutable_gpu_data() { return (int*) csc_ri_->mutable_gpu_data(); }
+  inline int* csc_co_mutable_gpu_data() { return (int*) csc_co_->mutable_gpu_data(); }
 
 private:
   int H_;            // range of height in spatial domain
@@ -149,9 +165,13 @@ private:
   int rho_max_;      // max of rho
   int rho_step_;     // step of rho
 
-  shared_ptr<SyncedMemory> v_;   // values, array of Dtype
-  shared_ptr<SyncedMemory> ci_;  // column indices, array of int
-  shared_ptr<SyncedMemory> ro_;  // row offsets, array of int
+  shared_ptr<SyncedMemory> csr_val_;   // csr values, array of Dtype
+  shared_ptr<SyncedMemory> csr_ro_;    // csr row offsets, array of int
+  shared_ptr<SyncedMemory> csr_ci_;    // csr col indices, array of int
+
+  shared_ptr<SyncedMemory> csc_val_;   // csc values, array of Dtype
+  shared_ptr<SyncedMemory> csc_ri_;    // csc row indices, equiv to ci of csr.T
+  shared_ptr<SyncedMemory> csc_co_;    // csc col offsets, equiv to ro of csr.T
 };
 
 /**

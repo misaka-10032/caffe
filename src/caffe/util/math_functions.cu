@@ -39,6 +39,24 @@ template void caffe_gpu_sincos<float>(const int, const float*, float*, float*);
 template void caffe_gpu_sincos<double>(const int, const double*, double*, double*);
 
 template <>
+void caffe_gpu_csr2csc(const int m, const int n, const int nnz,
+                       const float* csr_val, const int* csr_ro, const int* csr_ci,
+                       float* csc_val, int* csc_ri, int* csc_co) {
+  CUSPARSE_CHECK(cusparseScsr2csc(Caffe::cusparse_handle(),
+        m, n, nnz, csr_val, csr_ro, csr_ci, csc_val, csc_ri, csc_co,
+        CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO));
+}
+
+template <>
+void caffe_gpu_csr2csc(const int m, const int n, const int nnz,
+                       const double* csr_val, const int* csr_ro, const int* csr_ci,
+                       double* csc_val, int* csc_ri, int* csc_co) {
+  CUSPARSE_CHECK(cusparseDcsr2csc(Caffe::cusparse_handle(),
+        m, n, nnz, csr_val, csr_ro, csr_ci, csc_val, csc_ri, csc_co,
+        CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO));
+}
+
+template <>
 void caffe_gpu_csrmv(const CBLAS_TRANSPOSE transa, const int m, const int n,
                      const int nnz, const float alpha, const float* val, const int* ro,
                      const int* ci, const float* x, const float beta, float* y) {

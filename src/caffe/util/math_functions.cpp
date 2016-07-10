@@ -27,6 +27,41 @@ void caffe_sincos(int n, const double* a, double* y, double* z) {
 #endif
 }
 
+template <typename Dtype>
+void caffe_csr2csc(const int m, const int n, const int nnz,
+                   const Dtype* csr_val, const int* csr_ro, const int* csr_ci,
+                   Dtype* csc_val, int* csc_ri, int* csc_co) {
+  // MKL only supports square matrix
+  // code from
+  // http://crd-legacy.lbl.gov/~yunhe/cs267/final/source/utils/convert/matrix_io.c
+  // TODO: make it faster
+  int i, j, k, l;
+  const int* ptr;
+  for (i = 0; i <= n; i++) csc_co[i] = 0;
+  for (i = 0; i < nnz; i++) csc_co[csr_ci[i]+1]++;
+  for (i = 0; i < n; i++) csc_co[i+1] += csc_co[i];
+  for (i = 0, ptr = csr_ro; i < m; i++, ptr++) {
+    for (j = *ptr; j < *(ptr+1); j++) {
+      k = csr_ci[j];
+      l = csc_co[k]++;
+      csc_ri[l] = i;
+      csc_val[l] = csr_val[j];
+    }
+  }
+  for (i = n; i > 0; i--) csc_co[i] = csc_co[i-1];
+  csc_co[0] = 0;
+}
+
+template
+void caffe_csr2csc<float>(const int m, const int n, const int nnz,
+                          const float* csr_val, const int* csr_ro, const int* csr_ci,
+                          float* csc_val, int* csc_ri, int* csc_co);
+
+template
+void caffe_csr2csc<double>(const int m, const int n, const int nnz,
+                           const double* csr_val, const int* csr_ro, const int* csr_ci,
+                           double* csc_val, int* csc_ri, int* csc_co);
+
 template <>
 void caffe_csrmv(const CBLAS_TRANSPOSE transa, const int m, const int k,
                  const float alpha, const float* val, const int* ro,

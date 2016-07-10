@@ -37,7 +37,6 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Forward_gpu(
   top[0]->mutable_cpu_data()[0] = loss / num;
 }
 
-
 template <typename Dtype>
 void SigmoidCrossEntropyLossLayer<Dtype>::Backward_gpu(
     const vector<Blob<Dtype>*>& top, const vector<bool>& propagate_down,
@@ -61,8 +60,6 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Backward_gpu(
   }
 }
 
-//INSTANTIATE_LAYER_GPU_BACKWARD(SigmoidCrossEntropyLossLayer);
 INSTANTIATE_LAYER_GPU_FUNCS(SigmoidCrossEntropyLossLayer);
-
 
 }  // namespace caffe

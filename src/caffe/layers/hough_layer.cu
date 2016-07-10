@@ -49,8 +49,13 @@ void HoughBasis<Dtype>::Init_gpu() {
                    (Dtype*) cos_.mutable_gpu_data());
   InitHoughBasis<<<CAFFE_GET_BLOCKS(H_*W_*THETA_), CAFFE_CUDA_NUM_THREADS>>>(
       H_, W_, THETA_, RHO_, (const Dtype*) sin_.gpu_data(), (const Dtype*) cos_.gpu_data(),
-      rho_min_, rho_step_, val_mutable_gpu_data(), ro_mutable_gpu_data(), ci_mutable_gpu_data());
+      rho_min_, rho_step_, csr_val_mutable_gpu_data(), csr_ro_mutable_gpu_data(),
+      csr_ci_mutable_gpu_data());
   CUDA_POST_KERNEL_CHECK;
+  caffe_gpu_csr2csc(H_*W_, THETA_*RHO_, H_*W_*THETA_,
+                    csr_val_gpu_data(), csr_ro_gpu_data(), csr_ci_gpu_data(),
+                    csc_val_mutable_gpu_data(), csc_ri_mutable_gpu_data(),
+                    csc_co_mutable_gpu_data());
 }
 
 template void HoughBasis<float>::Init_gpu();
@@ -59,10 +64,10 @@ template void HoughBasis<double>::Init_gpu();
 template <typename Dtype>
 void HoughLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
                                     const vector<Blob<Dtype>*>& top) {
-  caffe_gpu_csrmv(CblasTrans, hb_ptr_->H()*hb_ptr_->W(),
-                  hb_ptr_->RHO()*hb_ptr_->THETA(), hb_ptr_->nnz(),
-                  Dtype(1), hb_ptr_->val_gpu_data(),
-                  hb_ptr_->ro_gpu_data(), hb_ptr_->ci_gpu_data(),
+  caffe_gpu_csrmv(CblasNoTrans, hb_ptr_->RHO()*hb_ptr_->THETA(),
+                  hb_ptr_->H()*hb_ptr_->W(), hb_ptr_->nnz(),
+                  Dtype(1), hb_ptr_->csc_val_gpu_data(),
+                  hb_ptr_->csc_co_gpu_data(), hb_ptr_->csc_ri_gpu_data(),
                   bottom[0]->gpu_data(), Dtype(0), top[0]->mutable_gpu_data());
 }
 
@@ -72,8 +77,8 @@ void HoughLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
                                      const vector<Blob<Dtype>*>& bottom) {
   caffe_gpu_csrmv(CblasNoTrans, hb_ptr_->H()*hb_ptr_->W(),
                   hb_ptr_->RHO()*hb_ptr_->THETA(), hb_ptr_->nnz(),
-                  Dtype(1), hb_ptr_->val_gpu_data(),
-                  hb_ptr_->ro_gpu_data(), hb_ptr_->ci_gpu_data(),
+                  Dtype(1), hb_ptr_->csr_val_gpu_data(),
+                  hb_ptr_->csr_ro_gpu_data(), hb_ptr_->csr_ci_gpu_data(),
                   top[0]->gpu_diff(), Dtype(0), bottom[0]->mutable_gpu_diff());
 }
 

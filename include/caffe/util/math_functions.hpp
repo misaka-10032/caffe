@@ -18,6 +18,16 @@ void caffe_sincos(const int n, const Dtype* a, Dtype* y, Dtype* z);
 template <typename Dtype>
 void caffe_gpu_sincos(const int n, const Dtype* a, Dtype* y, Dtype* z);
 
+template <typename Dtype>
+void caffe_csr2csc(const int m, const int n, const int nnz,
+                   const Dtype* csr_val, const int* csr_ro, const int* csr_ci,
+                   Dtype* csc_val, int* csc_ri, int* csc_co);
+
+template <typename Dtype>
+void caffe_gpu_csr2csc(const int m, const int n, const int nnz,
+                       const Dtype* csr_val, const int* csr_ro, const int* csr_ci,
+                       Dtype* csc_val, int* csc_ri, int* csc_co);
+
 // sparse matrix dense vector multiplication
 template <typename Dtype>
 void caffe_csrmv(const CBLAS_TRANSPOSE transa, const int m, const int k,
