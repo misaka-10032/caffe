@@ -33,8 +33,8 @@ def interp_surgery(net, layers):
 # a fully convolutional VGG16 net.
 # http://nbviewer.ipython.org/github/BVLC/caffe/blob/master/examples/net_surgery.ipynb
 #base_weights = 'models/5stage-vgg.caffemodel'
-#base_weights = 'models/hed_pretrained_bsds.caffemodel'
-base_weights = 'models/hed1.caffemodel'
+base_weights = 'models/hed_pretrained_bsds.caffemodel'
+#base_weights = 'models/hed+fp.caffemodel'
 
 # init
 caffe.set_mode_gpu()
@@ -54,5 +54,5 @@ solver.net.copy_from(base_weights)
 # 1. take SGD steps
 # 2. score the model by the test net `solver.test_nets[0]`
 # 3. repeat until satisfied
-solver.step(36000)
+solver.step(51000)
 
