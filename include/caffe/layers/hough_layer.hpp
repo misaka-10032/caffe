@@ -183,7 +183,9 @@ class HoughBasisFactory {
 public:
   static shared_ptr<HoughBasis<Dtype> > Get(vector<int> shape) {
     boost::mutex::scoped_lock lock(mutex_);
-    shape = HoughBasis<Dtype>::InferShape(shape[0], shape[1]);
+    vector<int> inferred_shape = HoughBasis<Dtype>::InferShape(shape[0], shape[1]);
+    if (shape[2] < 0) shape[2] = inferred_shape[2];
+    if (shape[3] < 0) shape[3] = inferred_shape[3];
     typename map<vector<int>, shared_ptr<HoughBasis<Dtype> > >::iterator
         it = factory_.find(shape);
     if (it != factory_.end()) {
