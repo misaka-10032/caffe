@@ -87,11 +87,11 @@ layer { bottom: 'conv6_2' top: 'conv6_3' name: 'conv6_3' type: "Convolution"
 layer { bottom: 'conv6_3' top: 'conv6_3' name: 'relu6_3' type: "ReLU" }
 
 ## DSN conv 1 ###
-#layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
-#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-#  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
-#layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
-#layer { type: "Sigmoid" name: "sigmoid-dsn1" bottom: "upscore-dsn1"  top:"sigmoid-dsn1"}
+layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
+  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
+layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
+layer { type: "Sigmoid" name: "sigmoid-dsn1" bottom: "upscore-dsn1"  top:"sigmoid-dsn1"}
 
 ### DSN conv 2 ###
 layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'

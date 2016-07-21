@@ -3,8 +3,8 @@ name: "FCN"
 input: "data"
 input_dim: 1
 input_dim: 3
-input_dim: 800
-input_dim: 800
+input_dim: 500
+input_dim: 500
 
 layer { bottom: 'data' top: 'conv1_1' name: 'conv1_1' type: "Convolution"
   param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 2 decay_mult: 0}
@@ -70,28 +70,13 @@ layer { bottom: 'conv5_2' top: 'conv5_3' name: 'conv5_3' type: "Convolution"
   param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
   convolution_param { engine: CAFFE num_output: 512 pad: 1 kernel_size: 3 } }
 layer { bottom: 'conv5_3' top: 'conv5_3' name: 'relu5_3' type: "ReLU" }
-layer { bottom: 'conv5_3' top: 'pool5' name: 'pool5' type: "Pooling"
-  pooling_param { pool: MAX kernel_size: 2 stride: 2 } }
-
-layer { bottom: 'pool5' top: 'conv6_1' name: 'conv6_1' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3 } }
-layer { bottom: 'conv6_1' top: 'conv6_1' name: 'relu6_1' type: "ReLU" }
-layer { bottom: 'conv6_1' top: 'conv6_2' name: 'conv6_2' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3 } }
-layer { bottom: 'conv6_2' top: 'conv6_2' name: 'relu6_2' type: "ReLU" }
-layer { bottom: 'conv6_2' top: 'conv6_3' name: 'conv6_3' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3 } }
-layer { bottom: 'conv6_3' top: 'conv6_3' name: 'relu6_3' type: "ReLU" }
 
 ## DSN conv 1 ###
-#layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
-#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-#  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
-#layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
-#layer { type: "Sigmoid" name: "sigmoid-dsn1" bottom: "upscore-dsn1"  top:"sigmoid-dsn1"}
+layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
+  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
+layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
+layer { type: "Sigmoid" name: "sigmoid-dsn1" bottom: "upscore-dsn1"  top:"sigmoid-dsn1"}
 
 ### DSN conv 2 ###
 layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
@@ -133,21 +118,9 @@ layer { type: "Deconvolution" name: 'upsample_16' bottom: 'score-dsn5' top: 'sco
 layer { type: "Crop" name: 'crop' bottom: 'score-dsn5-up' bottom: 'data' top: 'upscore-dsn5' }
 layer { type: "Sigmoid" name: "sigmoid-dsn5" bottom: "upscore-dsn5"  top:"sigmoid-dsn5"}
 
-###DSN conv 6##
-layer { name: 'score-dsn6' type: "Convolution" bottom: 'conv6_3' top: 'score-dsn6'
-  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
-layer { type: "Deconvolution" name: 'upsample_32' bottom: 'score-dsn6' top: 'score-dsn6-up'
-  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-  convolution_param { kernel_size: 64 stride: 32 num_output: 1 } }
-layer { type: "Crop" name: 'crop' bottom: 'score-dsn6-up' bottom: 'data' top: 'upscore-dsn6' }
-layer { type: "Sigmoid" name: "sigmoid-dsn6" bottom: "upscore-dsn6" top: "sigmoid-dsn6" }
-
 ### Concat and multiscale weight layer ###
-layer { name: "concat"
-  bottom: "upscore-dsn2" bottom: "upscore-dsn3"
-  bottom: "upscore-dsn4" bottom: "upscore-dsn5" bottom: "upscore-dsn6"
-  top: "concat-upscore" type: "Concat"
+layer { name: "concat" bottom: "upscore-dsn1"  bottom: "upscore-dsn2" bottom: "upscore-dsn3" 
+         bottom: "upscore-dsn4" bottom: "upscore-dsn5" top: "concat-upscore" type: "Concat"
   concat_param { concat_dim: 1} }
 layer { name: 'new-score-weighting' type: "Convolution" bottom: 'concat-upscore' top: 'upscore-fuse'
   param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}

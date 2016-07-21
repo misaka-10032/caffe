@@ -94,24 +94,24 @@ layer { bottom: 'conv6_3' top: 'conv6_3' name: 'relu6_3' type: "ReLU" }
 #layer { type: "Sigmoid" name: "sigmoid-dsn1" bottom: "upscore-dsn1"  top:"sigmoid-dsn1"}
 
 ### DSN conv 2 ###
-layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
-  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
-layer { type: "Deconvolution" name: 'upsample_2' bottom: 'score-dsn2' top: 'score-dsn2-up'
-  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-  convolution_param { kernel_size: 4 stride: 2 num_output: 1 } }
-layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'upscore-dsn2' }
-layer { type: "Sigmoid" name: "sigmoid-dsn2" bottom: "upscore-dsn2"  top:"sigmoid-dsn2"}
+#layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
+#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+#  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
+#layer { type: "Deconvolution" name: 'upsample_2' bottom: 'score-dsn2' top: 'score-dsn2-up'
+#  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
+#  convolution_param { kernel_size: 4 stride: 2 num_output: 1 } }
+#layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'upscore-dsn2' }
+#layer { type: "Sigmoid" name: "sigmoid-dsn2" bottom: "upscore-dsn2"  top:"sigmoid-dsn2"}
 
 ### DSN conv 3 ###
-layer { name: 'score-dsn3' type: "Convolution" bottom: 'conv3_3' top: 'score-dsn3'
-  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
-layer { type: "Deconvolution" name: 'upsample_4' bottom: 'score-dsn3' top: 'score-dsn3-up'
-  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-  convolution_param { kernel_size: 8 stride: 4 num_output: 1 } }
-layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'upscore-dsn3' }
-layer { type: "Sigmoid" name: "sigmoid-dsn3" bottom: "upscore-dsn3"  top:"sigmoid-dsn3"}
+#layer { name: 'score-dsn3' type: "Convolution" bottom: 'conv3_3' top: 'score-dsn3'
+#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+#  convolution_param { engine: CAFFE num_output: 1 kernel_size: 1 } }
+#layer { type: "Deconvolution" name: 'upsample_4' bottom: 'score-dsn3' top: 'score-dsn3-up'
+#  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
+#  convolution_param { kernel_size: 8 stride: 4 num_output: 1 } }
+#layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'upscore-dsn3' }
+#layer { type: "Sigmoid" name: "sigmoid-dsn3" bottom: "upscore-dsn3"  top:"sigmoid-dsn3"}
 
 ###DSN conv 4###
 layer { name: 'score-dsn4' type: "Convolution" bottom: 'conv4_3' top: 'score-dsn4'
@@ -145,8 +145,9 @@ layer { type: "Sigmoid" name: "sigmoid-dsn6" bottom: "upscore-dsn6" top: "sigmoi
 
 ### Concat and multiscale weight layer ###
 layer { name: "concat"
-  bottom: "upscore-dsn2" bottom: "upscore-dsn3"
-  bottom: "upscore-dsn4" bottom: "upscore-dsn5" bottom: "upscore-dsn6"
+  bottom: "upscore-dsn4" bottom: "upscore-dsn4"
+  bottom: "upscore-dsn5" bottom: "upscore-dsn5"
+  bottom: "upscore-dsn6"
   top: "concat-upscore" type: "Concat"
   concat_param { concat_dim: 1} }
 layer { name: 'new-score-weighting' type: "Convolution" bottom: 'concat-upscore' top: 'upscore-fuse'

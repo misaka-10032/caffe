@@ -154,63 +154,45 @@ layer { bottom: 'conv5_2' top: 'conv5_3' name: 'conv5_3' type: "Convolution"
   param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
   convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3 } }
 layer { bottom: 'conv5_3' top: 'conv5_3' name: 'relu5_3' type: "ReLU" }
-layer { bottom: 'conv5_3' top: 'pool5' name: 'pool5' type: "Pooling"
-  pooling_param { pool: MAX kernel_size: 2 stride: 2 } }
-
-layer { bottom: 'pool5' top: 'conv6_1' name: 'conv6_1' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3
-    weight_filler { type: "msra" } bias_filler { type: "constant" } } }
-layer { bottom: 'conv6_1' top: 'conv6_1' name: 'relu6_1' type: "ReLU" }
-layer { bottom: 'conv6_1' top: 'conv6_2' name: 'conv6_2' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3
-    weight_filler { type: "msra" } bias_filler { type: "constant" } } }
-layer { bottom: 'conv6_2' top: 'conv6_2' name: 'relu6_2' type: "ReLU" }
-layer { bottom: 'conv6_2' top: 'conv6_3' name: 'conv6_3' type: "Convolution"
-  param { lr_mult: 100 decay_mult: 1 } param { lr_mult: 200 decay_mult: 0}
-  convolution_param { engine: CUDNN num_output: 512 pad: 1 kernel_size: 3
-    weight_filler { type: "msra" } bias_filler { type: "constant" } } }
-layer { bottom: 'conv6_3' top: 'conv6_3' name: 'relu6_3' type: "ReLU" }
 
 ## DSN conv 1 ###
-#layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
-#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-#  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
-#layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
-#layer { type: "Sigmoid" name: "sigmoid_dsn1" bottom: "upscore-dsn1" top: "sigmoid_dsn1" }
-#layer { type: "Hough" name: "hf_dsn1" bottom: "sigmoid_dsn1" top: "hf_dsn1" hough_param { rho_range: 560 } }
-#layer { type: "BatchNorm" name: "hfn_dsn1" bottom: "hf_dsn1" top: "hfn_dsn1" batch_norm_param { use_global_stats: 0 } }
-#layer { type: "Power" name: "hfnp_dsn1" bottom: "hfn_dsn1" top: "hfnp_dsn1" power_param { scale: 3 } }
-#layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn1" bottom: "hfnps_label" top: "dsn1_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
+layer { name: 'score-dsn1' type: "Convolution" bottom: 'conv1_2' top: 'score-dsn1-up'
+  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
+layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'upscore-dsn1' }
+layer { type: "Sigmoid" name: "sigmoid_dsn1" bottom: "upscore-dsn1" top: "sigmoid_dsn1" }
+layer { type: "Hough" name: "hf_dsn1" bottom: "sigmoid_dsn1" top: "hf_dsn1" hough_param { rho_range: 560 } }
+layer { type: "BatchNorm" name: "hfn_dsn1" bottom: "hf_dsn1" top: "hfn_dsn1" batch_norm_param { use_global_stats: 0 } }
+layer { type: "Power" name: "hfnp_dsn1" bottom: "hfn_dsn1" top: "hfnp_dsn1" power_param { scale: 3 } }
+layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn1" bottom: "hfnps_label" top: "dsn1_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 
 ### DSN conv 2 ###
-#layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
-#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-#  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
-#layer { type: "Deconvolution" name: 'upsample_2' bottom: 'score-dsn2' top: 'score-dsn2-up'
-#  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-#  convolution_param { kernel_size: 4 stride: 2 num_output: 1 } }
-#layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'upscore-dsn2' }
-#layer { type: "Sigmoid" name: "sigmoid_dsn2" bottom: "upscore-dsn2" top: "sigmoid_dsn2" }
-#layer { type: "Hough" name: "hf_dsn2" bottom: "sigmoid_dsn2" top: "hf_dsn2" hough_param { rho_range: 560 } }
-#layer { type: "BatchNorm" name: "hfn_dsn2" bottom: "hf_dsn2" top: "hfn_dsn2" batch_norm_param { use_global_stats: 0 } }
-#layer { type: "Power" name: "hfnp_dsn2" bottom: "hfn_dsn2" top: "hfnp_dsn2" power_param { scale: 3 } }
-#layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn2" bottom: "hfnps_label" top: "dsn2_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
+layer { name: 'score-dsn2' type: "Convolution" bottom: 'conv2_2' top: 'score-dsn2'
+  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
+layer { type: "Deconvolution" name: 'upsample_2' bottom: 'score-dsn2' top: 'score-dsn2-up'
+  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
+  convolution_param { kernel_size: 4 stride: 2 num_output: 1 } }
+layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'upscore-dsn2' }
+layer { type: "Sigmoid" name: "sigmoid_dsn2" bottom: "upscore-dsn2" top: "sigmoid_dsn2" }
+layer { type: "Hough" name: "hf_dsn2" bottom: "sigmoid_dsn2" top: "hf_dsn2" hough_param { rho_range: 560 } }
+layer { type: "BatchNorm" name: "hfn_dsn2" bottom: "hf_dsn2" top: "hfn_dsn2" batch_norm_param { use_global_stats: 0 } }
+layer { type: "Power" name: "hfnp_dsn2" bottom: "hfn_dsn2" top: "hfnp_dsn2" power_param { scale: 3 } }
+layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn2" bottom: "hfnps_label" top: "dsn2_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 
 ### DSN conv 3 ###
-#layer { name: 'score-dsn3' type: "Convolution" bottom: 'conv3_3' top: 'score-dsn3'
-#  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
-#  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
-#layer { type: "Deconvolution" name: 'upsample_4' bottom: 'score-dsn3' top: 'score-dsn3-up'
-#  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-#  convolution_param { kernel_size: 8 stride: 4 num_output: 1 } }
-#layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'upscore-dsn3' }
-#layer { type: "Sigmoid" name: "sigmoid_dsn3" bottom: "upscore-dsn3" top: "sigmoid_dsn3" }
-#layer { type: "Hough" name: "hf_dsn3" bottom: "sigmoid_dsn3" top: "hf_dsn3" hough_param { rho_range: 560 } }
-#layer { type: "BatchNorm" name: "hfn_dsn3" bottom: "hf_dsn3" top: "hfn_dsn3" batch_norm_param { use_global_stats: 0 } }
-#layer { type: "Power" name: "hfnp_dsn3" bottom: "hfn_dsn3" top: "hfnp_dsn3" power_param { scale: 3 } }
-#layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn3" bottom: "hfnps_label" top: "dsn3_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
+layer { name: 'score-dsn3' type: "Convolution" bottom: 'conv3_3' top: 'score-dsn3'
+  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 0}
+  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1 } }
+layer { type: "Deconvolution" name: 'upsample_4' bottom: 'score-dsn3' top: 'score-dsn3-up'
+  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
+  convolution_param { kernel_size: 8 stride: 4 num_output: 1 } }
+layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'upscore-dsn3' }
+layer { type: "Sigmoid" name: "sigmoid_dsn3" bottom: "upscore-dsn3" top: "sigmoid_dsn3" }
+layer { type: "Hough" name: "hf_dsn3" bottom: "sigmoid_dsn3" top: "hf_dsn3" hough_param { rho_range: 560 } }
+layer { type: "BatchNorm" name: "hfn_dsn3" bottom: "hf_dsn3" top: "hfn_dsn3" batch_norm_param { use_global_stats: 0 } }
+layer { type: "Power" name: "hfnp_dsn3" bottom: "hfn_dsn3" top: "hfnp_dsn3" power_param { scale: 3 } }
+layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn3" bottom: "hfnps_label" top: "dsn3_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 
 ###DSN conv 4###
 layer { name: 'score-dsn4' type: "Convolution" bottom: 'conv4_3' top: 'score-dsn4'
@@ -237,30 +219,12 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn5-up' bottom: 'data' top: 'u
 layer { type: "Sigmoid" name: "sigmoid_dsn5" bottom: "upscore-dsn5" top: "sigmoid_dsn5" }
 layer { type: "Hough" name: "hf_dsn5" bottom: "sigmoid_dsn5" top: "hf_dsn5" hough_param { rho_range: 560 } }
 layer { type: "BatchNorm" name: "hfn_dsn5" bottom: "hf_dsn5" top: "hfn_dsn5" batch_norm_param { use_global_stats: 0 } }
-layer { type: "Power" name: "hfnp_dsn5" bottom: "hfn_dsn5" top: "hfnp_dsn5" power_param { scale: 3 } }#layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn5" bottom: "hfnps_label" top: "dsn5_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn5" bottom: "hfnps_label" top: "dsn5_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0}
-
-###DSN conv 6###
-layer { name: 'score-dsn6' type: "Convolution" bottom: 'conv6_3' top: 'score-dsn6'
-  param { lr_mult: 0.01 decay_mult: 1 } param { lr_mult: 0.02 decay_mult: 2}
-  convolution_param { engine: CUDNN num_output: 1 kernel_size: 1
-    weight_filler { type: "msra" } bias_filler { type: "constant" } } }
-layer { type: "Deconvolution" name: 'upsample_32' bottom: 'score-dsn6' top: 'score-dsn6-up'
-  param { lr_mult: 0 decay_mult: 1 } param { lr_mult: 0 decay_mult: 0}
-  convolution_param { kernel_size: 64 stride: 32 num_output: 1 } }
-layer { type: "Crop" name: 'crop' bottom: 'score-dsn6-up' bottom: 'data' top: 'upscore-dsn6' }
-layer { type: "Sigmoid" name: "sigmoid_dsn6" bottom: "upscore-dsn6" top: "sigmoid_dsn6" }
-layer { type: "Hough" name: "hf_dsn6" bottom: "sigmoid_dsn6" top: "hf_dsn6" hough_param { rho_range: 560 } }
-layer { type: "BatchNorm" name: "hfn_dsn6" bottom: "hf_dsn6" top: "hfn_dsn6" batch_norm_param { use_global_stats: 0 } }
-layer { type: "Power" name: "hfnp_dsn6" bottom: "hfn_dsn6" top: "hfnp_dsn6" power_param { scale: 3 } }
-layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn6" bottom: "hfnps_label" top: "dsn6_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
+layer { type: "Power" name: "hfnp_dsn5" bottom: "hfn_dsn5" top: "hfnp_dsn5" power_param { scale: 3 } }
+layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn5" bottom: "hfnps_label" top: "dsn5_loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 
 ### Concat and multiscale weight layer ###
-layer { name: "concat"
-  bottom: "upscore-dsn4" bottom: "upscore-dsn4"
-  bottom: "upscore-dsn4" bottom: "upscore-dsn5"
-  bottom: "upscore-dsn6"
-  top: "concat-upscore" type: "Concat"
+layer { name: "concat" bottom: "upscore-dsn1"  bottom: "upscore-dsn2" bottom: "upscore-dsn3"
+         bottom: "upscore-dsn4" bottom: "upscore-dsn5" top: "concat-upscore" type: "Concat"
   concat_param { concat_dim: 1} }
 layer { name: 'new-score-weighting' type: "Convolution" bottom: 'concat-upscore' top: 'upscore-fuse'
   param { lr_mult: 0.001 decay_mult: 1 } param { lr_mult: 0.002 decay_mult: 0}
