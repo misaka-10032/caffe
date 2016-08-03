@@ -154,16 +154,16 @@ protected:
   inline int* csc_co_mutable_gpu_data() { return (int*) csc_co_->mutable_gpu_data(); }
 
 private:
-  int H_;            // range of height in spatial domain
-  int W_;            // rnage of width in spatial domain
-  int RHO_;          // rnage of rho in Hough domain
-  int THETA_;        // range of theta in Hough domain
-  int theta_min_;    // min of theta
-  int theta_max_;    // max of theta
-  int theta_step_;   // step of theta
-  int rho_min_;      // min of rho
-  int rho_max_;      // max of rho
-  int rho_step_;     // step of rho
+  int H_;              // range of height in spatial domain
+  int W_;              // rnage of width in spatial domain
+  int RHO_;            // rnage of rho in Hough domain
+  int THETA_;          // range of theta in Hough domain
+  int theta_min_;      // min of theta
+  int theta_max_;      // max of theta
+  Dtype theta_step_;   // step of theta
+  int rho_min_;        // min of rho
+  int rho_max_;        // max of rho
+  Dtype rho_step_;     // step of rho
 
   shared_ptr<SyncedMemory> csr_val_;   // csr values, array of Dtype
   shared_ptr<SyncedMemory> csr_ro_;    // csr row offsets, array of int

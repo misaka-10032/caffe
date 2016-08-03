@@ -1,2 +1,4 @@
 *.qsub.*
 .gdbinit
+eval*
+data*

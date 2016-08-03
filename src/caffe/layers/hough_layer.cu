@@ -10,7 +10,7 @@ template <typename Dtype>
 __global__ void InitHoughBasis(const int H_, const int W_,
                                const int THETA_, const int RHO_,
                                const Dtype* sin_, const Dtype* cos_,
-                               const int rho_min_, const int rho_step_,
+                               const int rho_min_, const Dtype rho_step_,
                                Dtype* val_, int* ro_, int* ci_) {
   CUDA_KERNEL_LOOP(idx, H_*W_*THETA_) {
     const int hw = idx / THETA_;

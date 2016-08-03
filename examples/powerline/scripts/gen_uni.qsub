@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#PBS -q titanx
+#PBS -l walltime=72:00:00
+#PBS -d /home/longqic/caffe/examples/powerline/scripts
+module load opt-python
+python gen_uni.py | tee gen_uni.qsub.log
