@@ -225,7 +225,36 @@ public:
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline const char* type() const { return "Hough"; }
+protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+                           const vector<Blob<Dtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+                           const vector<Blob<Dtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+                            const vector<bool>& propagate_down,
+                            const vector<Blob<Dtype>*>& bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+                            const vector<bool>& propagate_down,
+                            const vector<Blob<Dtype>*>& bottom);
+
+  shared_ptr<HoughBasis<Dtype> > hb_ptr_;
+  int H_, W_, THETA_, RHO_;
+};
+
+/**
+ * @brief Hough transpose layer. The reverse direction of HoughLayer.
+ *        It takes only one bottom and outputs one top.
+ *        It only takes batch_size as 1.
+ */
+template <typename Dtype>
+class HoughTransposeLayer : public Layer<Dtype> {
+public:
+  explicit HoughTransposeLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
 
 protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,

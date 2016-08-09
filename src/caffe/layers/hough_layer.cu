@@ -61,6 +61,10 @@ void HoughBasis<Dtype>::Init_gpu() {
 template void HoughBasis<float>::Init_gpu();
 template void HoughBasis<double>::Init_gpu();
 
+/**
+ * HoughLayer
+ */
+
 template <typename Dtype>
 void HoughLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
                                     const vector<Blob<Dtype>*>& top) {
@@ -83,5 +87,32 @@ void HoughLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(HoughLayer);
+
+/**
+ * HoughTransposeLayer
+ */
+
+template <typename Dtype>
+void HoughTransposeLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+                                             const vector<Blob<Dtype>*>& top) {
+  caffe_gpu_csrmv(CblasNoTrans, hb_ptr_->H()*hb_ptr_->W(),
+                  hb_ptr_->RHO()*hb_ptr_->THETA(), hb_ptr_->nnz(),
+                  Dtype(1), hb_ptr_->csr_val_gpu_data(),
+                  hb_ptr_->csr_ro_gpu_data(), hb_ptr_->csr_ci_gpu_data(),
+                  bottom[0]->gpu_data(), Dtype(0), top[0]->mutable_gpu_data());
+}
+
+template <typename Dtype>
+void HoughTransposeLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
+                                              const vector<bool>& propagate_down,
+                                              const vector<Blob<Dtype>*>& bottom) {
+  caffe_gpu_csrmv(CblasNoTrans, hb_ptr_->RHO()*hb_ptr_->THETA(),
+                  hb_ptr_->H()*hb_ptr_->W(), hb_ptr_->nnz(),
+                  Dtype(1), hb_ptr_->csc_val_gpu_data(),
+                  hb_ptr_->csc_co_gpu_data(), hb_ptr_->csc_ri_gpu_data(),
+                  top[0]->gpu_diff(), Dtype(0), bottom[0]->mutable_gpu_diff());
+}
+
+INSTANTIATE_LAYER_GPU_FUNCS(HoughTransposeLayer);
 
 }  // namespace caffe
