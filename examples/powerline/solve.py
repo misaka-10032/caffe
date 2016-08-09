@@ -7,12 +7,12 @@ from surgery import transplant, interp
 
 # a fully convolutional VGG16 net.
 # http://nbviewer.ipython.org/github/BVLC/caffe/blob/master/examples/net_surgery.ipynb
-base_def = 'models/hed.deploy'
-base_weights = 'models/5stage-vgg.caffemodel'
+#base_def = 'models/hed.deploy'
+#base_weights = 'models/5stage-vgg.caffemodel'
 #base_weights = 'models/hed_pretrained_bsds.caffemodel'
 #base_weights = 'models/hed+fp.caffemodel'
-#base_def = 'models/hough_v2.deploy'
-#base_weights = 'models/hough_v2.caffemodel'
+base_def = 'models/hough_v7.deploy'
+base_weights = 'models/hough_v7.caffemodel'
 base_net = caffe.Net(base_def, base_weights, caffe.TRAIN)
 
 test_lst = 'data/test/test_pair.lst'

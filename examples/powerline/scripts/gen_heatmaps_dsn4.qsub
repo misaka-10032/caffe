@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#PBS -q phi
+#PBS -l walltime=03:00:00
+#PBS -d /home/longqic/caffe/examples/powerline/scripts
+module load opt-python
+python gen_heatmaps_dsn4.py | tee gen_heatmaps_dsn4.qsub.log

@@ -54,7 +54,7 @@ layer {
   propagate_down: 0
   hough_param {
     theta_range: 360
-    rho_range: 640
+    rho_range: 480
   }
 }
 
@@ -229,7 +229,7 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn1-up' bottom: 'data' top: 'u
 layer { type: "BalancedSigmoidCrossEntropyLoss" name: "dsn1-loss" bottom: "upscore-dsn1" bottom: "label" top: "dsn1-loss" loss_weight: .8 propagate_down: 1 propagate_down: 0 }
 ## hough
 #layer { type: "Sigmoid" name: "sigmoid_dsn1" bottom: "upscore-dsn1" top: "sigmoid_dsn1" }
-#layer { type: "Hough" name: "hf_dsn1" bottom: "sigmoid_dsn1" top: "hf_dsn1" hough_param { theta_range: 360 rho_range: 640 } }
+#layer { type: "Hough" name: "hf_dsn1" bottom: "sigmoid_dsn1" top: "hf_dsn1" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_dsn1" bottom: "hf_dsn1" top: "nla_hf_dsn1"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -256,7 +256,7 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn2-up' bottom: 'data' top: 'u
 layer { type: "BalancedSigmoidCrossEntropyLoss" name: "dsn2-loss" bottom: "upscore-dsn2" bottom: "label" top: "dsn2-loss" loss_weight: 1.2 propagate_down: 1 propagate_down: 0 }
 ## hough
 #layer { type: "Sigmoid" name: "sigmoid_dsn2" bottom: "upscore-dsn2" top: "sigmoid_dsn2" }
-#layer { type: "Hough" name: "hf_dsn2" bottom: "sigmoid_dsn2" top: "hf_dsn2" hough_param { theta_range: 360 rho_range: 640 } }
+#layer { type: "Hough" name: "hf_dsn2" bottom: "sigmoid_dsn2" top: "hf_dsn2" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_dsn2" bottom: "hf_dsn2" top: "nla_hf_dsn2"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -283,7 +283,7 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn3-up' bottom: 'data' top: 'u
 layer { type: "BalancedSigmoidCrossEntropyLoss" name: "dsn3-loss" bottom: "upscore-dsn3" bottom: "label" top: "dsn3-loss" loss_weight: 1.6 propagate_down: 1 propagate_down: 0 }
 ## hough
 #layer { type: "Sigmoid" name: "sigmoid_dsn3" bottom: "upscore-dsn3" top: "sigmoid_dsn3" }
-#layer { type: "Hough" name: "hf_dsn3" bottom: "sigmoid_dsn3" top: "hf_dsn3" hough_param { theta_range: 360 rho_range: 640 } }
+#layer { type: "Hough" name: "hf_dsn3" bottom: "sigmoid_dsn3" top: "hf_dsn3" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_dsn3" bottom: "hf_dsn3" top: "nla_hf_dsn3"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -311,7 +311,7 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn4-up' bottom: 'data' top: 'u
 #layer { type: "SigmoidCrossEntropyLoss" name: "dsn4-loss" bottom: "p_dsn4" bottom: "p_label" top: "dsn4-loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 ## hough
 layer { type: "Sigmoid" name: "sigmoid_dsn4" bottom: "upscore-dsn4" top: "sigmoid_dsn4" }
-layer { type: "Hough" name: "hf_dsn4" bottom: "sigmoid_dsn4" top: "hf_dsn4" hough_param { theta_range: 360 rho_range: 640 } }
+layer { type: "Hough" name: "hf_dsn4" bottom: "sigmoid_dsn4" top: "hf_dsn4" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_dsn4" bottom: "hf_dsn4" top: "nla_hf_dsn4"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -339,7 +339,7 @@ layer { type: "Crop" name: 'crop' bottom: 'score-dsn5-up' bottom: 'data' top: 'u
 #layer { type: "SigmoidCrossEntropyLoss" name: "dsn5-loss" bottom: "p_dsn5" bottom: "p_label" top: "dsn5-loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 ## hough
 layer { type: "Sigmoid" name: "sigmoid_dsn5" bottom: "upscore-dsn5" top: "sigmoid_dsn5" }
-layer { type: "Hough" name: "hf_dsn5" bottom: "sigmoid_dsn5" top: "hf_dsn5" hough_param { theta_range: 360 rho_range: 640 } }
+layer { type: "Hough" name: "hf_dsn5" bottom: "sigmoid_dsn5" top: "hf_dsn5" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_dsn5" bottom: "hf_dsn5" top: "nla_hf_dsn5"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -364,7 +364,7 @@ layer { type: "SigmoidCrossEntropyLoss" bottom: "hfnp_dsn5" bottom: "hfnps_label
 #  convolution_param { kernel_size: 64 stride: 32 num_output: 1 } }
 #layer { type: "Crop" name: 'crop' bottom: 'score-dsn6-up' bottom: 'data' top: 'upscore-dsn6' }
 #layer { type: "Sigmoid" name: "sigmoid_dsn6" bottom: "upscore-dsn6" top: "sigmoid_dsn6" }
-#layer { type: "Hough" name: "hf_dsn6" bottom: "sigmoid_dsn6" top: "hf_dsn6" hough_param { theta_range: 360 rho_range: 640 } }
+#layer { type: "Hough" name: "hf_dsn6" bottom: "sigmoid_dsn6" top: "hf_dsn6" hough_param { theta_range: 360 rho_range: 480 } }
 ### le
 ##layer { type: "Convolution" name: "nla_hf_dsn6" bottom: "hf_dsn6" top: "nla_hf_dsn6"
 ##  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
@@ -394,7 +394,7 @@ layer { name: 'new-score-weighting' type: "Convolution" bottom: 'concat-upscore'
 #layer { type: "SigmoidCrossEntropyLoss" name: "fuse-loss" bottom: "p_fuse" bottom: "p_label" top: "fuse-loss" loss_weight: 1 propagate_down: 1 propagate_down: 0 }
 ## hough
 layer { type: "Sigmoid" name: "sigmoid_fuse" bottom: "upscore-fuse" top: "sigmoid_fuse" }
-layer { type: "Hough" name: "hf_fuse" bottom: "sigmoid_fuse" top: "hf_fuse" hough_param { theta_range: 360 rho_range: 640 } }
+layer { type: "Hough" name: "hf_fuse" bottom: "sigmoid_fuse" top: "hf_fuse" hough_param { theta_range: 360 rho_range: 480 } }
 ## le
 #layer { type: "Convolution" name: "nla_hf_fuse" bottom: "hf_fuse" top: "nla_hf_fuse"
 #  convolution_param { num_output: 1 kernel_size: 9 pad: 4 stride: 1
