@@ -11,8 +11,8 @@ from surgery import transplant, interp
 #base_weights = 'models/5stage-vgg.caffemodel'
 #base_weights = 'models/hed_pretrained_bsds.caffemodel'
 #base_weights = 'models/hed+fp.caffemodel'
-base_def = 'models/hough_v7.deploy'
-base_weights = 'models/hough_v7.caffemodel'
+base_def = 'models/hough_v9.deploy'
+base_weights = 'models/hough_v9.caffemodel'
 base_net = caffe.Net(base_def, base_weights, caffe.TRAIN)
 
 test_lst = 'data/test/test_pair.lst'

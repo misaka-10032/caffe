@@ -103,8 +103,8 @@ void HoughTransposeLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   vector<int> top_shape(4);
   top_shape[0] = 1;
   top_shape[1] = 1;
-  top_shape[2] = hb_ptr_->THETA();
-  top_shape[3] = hb_ptr_->RHO();
+  top_shape[2] = hb_ptr_->H();
+  top_shape[3] = hb_ptr_->W();
   top[0]->Reshape(top_shape);
 }
 

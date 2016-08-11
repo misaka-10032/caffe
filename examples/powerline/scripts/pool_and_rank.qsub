@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#PBS -q phi
+#PBS -l walltime=03:00:00
+#PBS -d /home/longqic/caffe/examples/powerline/scripts
+module load opt-python
+python pool_and_rank.py | tee pool_and_rank.qsub.log

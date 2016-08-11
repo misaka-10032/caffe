@@ -1,0 +1,130 @@
+<html>
+  <head>
+    <script src="/static/jquery-3.1.0.min.js"></script>
+    <script>
+      var typeOverlay = {0: "Prediction", 1: "Ground Truth", 2: "Difference"};
+      var typeRaw = {0: "Prediction", 1: "Ground Truth", 2: "Background"};
+      var row = 0;
+      var col = 0;
+      var rank = 0;
+      var type = 0;
+      var overlay = 1;
+
+      function update_by_rank() {
+        /**
+         * rank: 0..63
+         * type: 0/1/2 --> pred/gt/diff or bg/gt/pred
+         * overlay: 0/1 --> no/yes
+         */
+        console.log("update_by_rank " + "rank: " + rank + ", type: " + type +
+                    ", overlay: " + overlay);
+        url = "/imgsrc/rank/" + rank + "/" + type + "/" + overlay;
+        $.ajax({
+          url: url,
+          dataType: "json",
+          success: function(data) {
+            row = data.row;
+            col = data.col;
+            if (overlay == 1)
+              typeText = typeOverlay[type] + ", Overlay.";
+            else
+              typeText = typeRaw[type] + ", raw.";
+            $("#img").attr("src", data.src);
+            $("#row").val(row);
+            $("#col").val(col);
+            $("#type").text(typeText);
+            $("#score").text(data.score);
+            console.log("row: " + data.row + ", col: " + data.col);
+            console.log("src: " + data.src);
+            console.log("score: " + data.score);
+          }
+        });
+      }
+
+      function update_by_loc() {
+        console.log("update_by_loc " + "row: " + row + ", col: " + col +
+                   ", type: " + type + ", overlay: " + overlay);
+        url = "/imgsrc/loc/" + row + "/" + col + "/" + type + "/" + overlay;
+        $.ajax({
+          url: url,
+          dataType: "json",
+          success: function(data) {
+            rank = data.rank;
+            if (overlay == 1)
+              typeText = typeOverlay[type] + ", Overlay.";
+            else
+              typeText = typeRaw[type] + ", raw.";
+            $("#img").attr("src", data.src);
+            $("#rank").val(data.rank);
+            $("#type").text(typeText);
+            $("#score").text(data.score);
+            console.log("rank: " + data.rank);
+            console.log("score: " + data.score);
+          }
+        });
+      }
+
+      $(function() {
+        update_by_rank();
+
+        $("#btn-type").click(function() {
+          type = (type + 1) % 3;
+          update_by_rank();
+        });
+        $("#btn-overlay").click(function() {
+          overlay = (overlay + 1) % 2;
+          update_by_rank();
+        });
+        $("#rank").change(function() {
+          rank = this.value;
+          update_by_rank();
+        });
+        $("#go").click(function() {
+          row = $("#row").val();
+          col = $("#col").val();
+          update_by_loc();
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <img id="img" src=""
+         width="680" height="680" />
+    <div style="display: inline-block; vertical-align: top;">
+      <span style="margin: 10">Type:</span>
+      <span id="type" style="margin: 10"></span>
+      <br/>
+      <span style="margin: 10">Score:</span>
+      <span id="score" style="margin: 10">0</span>
+      <br/>
+      <button id="btn-type" style="margin: 10">Type</button>
+      <button id="btn-overlay" style="margin: 10">Overlay</button>
+      <br/>
+      <span style="margin: 10">Rank:</span>
+      <select id="rank" style="margin: 10">
+{% for rank in range(64) %}
+<option value="{{ rank }}">{{ rank }}</option>
+{% endfor %}
+      </select>
+      <br/>
+      <span style="margin-left: 10">Row:</span>
+      <input id="row" type="text" size="2" maxlength="1" />
+      <span style="margin-left: 10">Col:</span>
+      <input id="col" type="text" size="2" maxlength="1" />
+      <button id="go" style="margin-left: 10">Go</button>
+      <br/><br/><br/><br/>
+      <div id="note-by" style="margin-left: 10">
+        <p>For labels,</p>
+        <ol>
+          <li>Red is positive</li>
+          <li>blue is negative</li>
+        </ol>
+        <p>For diff,</p>
+        <ol>
+          <li>Red is false positive</li>
+          <li>Blue is false negative</li>
+        </ol>
+      </div>
+    </div>
+  </body>
+</html>
